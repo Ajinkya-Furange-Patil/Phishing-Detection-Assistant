@@ -19,6 +19,17 @@ CORS(app)  # Enable CORS for browser extension
 # Initialize advanced analyzer
 advanced_analyzer = PhishingAnalyzer()
 
+# Initialize Gemini extractor (optional - only if API key is set)
+try:
+    gemini_extractor = GeminiEmailExtractor()
+    GEMINI_AVAILABLE = True
+    print("✓ Gemini API initialized")
+except Exception as e:
+    gemini_extractor = None
+    GEMINI_AVAILABLE = False
+    print(f"⚠ Gemini API not available: {e}")
+    print("  Extension will use fallback extraction")
+
 # Paths to models
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models', 'saved_models')
 # Note: On Windows, paths are case-insensitive, but we will look up the model path.

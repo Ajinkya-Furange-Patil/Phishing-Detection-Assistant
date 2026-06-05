@@ -1,4 +1,18 @@
+# ============================================
+# Large Dataset Files (exceed GitHub 100MB limit)
+# ============================================
+datasets/Module 1/emails.csv
+datasets/Module 4/email-data.csv
+datasets/combine dataset/final_unique_sample_25.csv
+datasets/combine dataset/simple_dataset.csv
+
+# Files exceeding GitHub's 50MB recommended limit
+datasets/Module 2/PhiUSIIL_Phishing_URL_Dataset (1).csv
+datasets/Module 3/email_dataset_100k.csv
+
+# ============================================
 # Python
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -28,33 +42,32 @@ ENV/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# PyTorch Models
+# ============================================
+# PyTorch / ML Models (large binary files)
+# ============================================
 *.pth
 *.pt
 *.ckpt
 
-# Datasets (too large for git)
-datasets/
-data/
-*.mbox
-*.csv
-*.json
-*.zip
-*.tar.gz
-
+# ============================================
 # IDE
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
+# ============================================
 # OS
+# ============================================
 .DS_Store
 Thumbs.db
 desktop.ini
 
+# ============================================
 # Logs
+# ============================================
 *.log
 logs/
 
@@ -73,9 +86,12 @@ Thumbs.db
 desktop.ini
 
 # Kaggle credentials
+# ============================================
 .kaggle/
 
+# ============================================
 # Temporary files
+# ============================================
 tmp/
 temp/
 *.tmp
