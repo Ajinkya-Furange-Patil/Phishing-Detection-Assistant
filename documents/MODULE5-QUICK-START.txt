@@ -1,0 +1,205 @@
+========================================
+MODULE 5: BEHAVIORAL PROFILING
+QUICK START GUIDE
+========================================
+
+🎯 WHAT MODULE 5 DOES:
+Detects psychological manipulation in phishing emails
+Analyzes: urgency, threats, financial pressure, authority impersonation
+
+📦 NO SEPARATE DOWNLOAD NEEDED!
+Module 5 REUSES Module 1 datasets (Enron + Nazario + LLM)
+
+========================================
+QUICK STEPS (20 MINUTES)
+========================================
+
+STEP 1: Verify You Have Module 1 Data
+--------------------------------------
+Check if you have:
+  ✓ datasets/enron/
+  ✓ datasets/phishing0.mbox (or similar)
+  ✓ datasets/llm_phishing/
+
+If YES → Go to STEP 2
+If NO → Download Module 1 datasets first:
+  - Enron: pip install datasets; load_dataset("enron_emails")
+  - Nazario: wget http://monkey.org/~jose/phishing/phishing0.mbox
+  - LLM: git clone https://github.com/FrancescoGreco/AI-Generated-Phishing-Detection.git
+
+
+STEP 2: Create Lexicons
+--------------------------------------
+Copy the code from MODULE5-DATASET-GUIDE.md
+
+Create file: module5_lexicons.py
+(Contains urgency_words, threat_words, financial_words, etc.)
+
+Test it:
+  python module5_lexicons.py
+
+
+STEP 3: Extract Features
+--------------------------------------
+Create file: process_module5_data.py
+(Processes Module 1 datasets and extracts behavioral scores)
+
+Run it:
+  python process_module5_data.py
+
+This creates: datasets/module5_behavioral_features.csv
+
+
+STEP 4: Verify Output
+--------------------------------------
+import pandas as pd
+df = pd.read_csv('datasets/module5_behavioral_features.csv')
+print(df.head())
+print(df['label'].value_counts())
+
+
+STEP 5: Train Module 5 Model
+--------------------------------------
+from sklearn.ensemble import RandomForestClassifier
+
+X = df[['urgency_score', 'threat_score', 'financial_score', 
+        'authority_score', 'password_reset_flag']]
+y = df['label']
+
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
+
+Save model:
+import joblib
+joblib.dump(model, 'models/module5_behavioral_model.pkl')
+
+========================================
+WHAT YOU GET
+========================================
+
+Output File: datasets/module5_behavioral_features.csv
+
+Columns:
+- urgency_score      (0-10)
+- threat_score       (0-10)
+- financial_score    (0-10)
+- authority_score    (0-10)
+- password_reset_flag (0 or 1)
+- label              (0=legitimate, 1=phishing)
+- source             (enron, nazario, llm)
+
+========================================
+EXAMPLE OUTPUT
+========================================
+
+Phishing Email:
+"URGENT! Your PayPal account suspended. Verify payment immediately 
+or face legal action. Click here to reset password."
+
+Scores:
+  urgency_score:    9/10  ← HIGH
+  threat_score:     8/10  ← HIGH
+  financial_score:  7/10  ← HIGH
+  authority_score:  6/10  ← MEDIUM
+  password_reset:   1     ← YES
+
+Prediction: PHISHING (98% confidence)
+
+Legitimate Email:
+"Hi team, meeting at 3pm to discuss Q2 results. Please review 
+the attached report before the meeting."
+
+Scores:
+  urgency_score:    0/10  ← LOW
+  threat_score:     0/10  ← LOW
+  financial_score:  0/10  ← LOW
+  authority_score:  0/10  ← LOW
+  password_reset:   0     ← NO
+
+Prediction: LEGITIMATE (95% confidence)
+
+========================================
+FILES YOU NEED
+========================================
+
+1. module5_lexicons.py       ← Psycholinguistic dictionaries
+2. process_module5_data.py    ← Feature extraction script
+3. datasets/enron/            ← Source data (from Module 1)
+4. datasets/*.mbox            ← Source data (from Module 1)
+5. datasets/llm_phishing/     ← Source data (from Module 1)
+
+OUTPUT:
+6. datasets/module5_behavioral_features.csv  ← Your training data
+
+========================================
+COMPLETE CODE AVAILABLE IN:
+========================================
+
+📄 MODULE5-DATASET-GUIDE.md
+  - Full step-by-step instructions
+  - Complete Python code
+  - Troubleshooting tips
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Problem: "No module named 'datasets'"
+Solution: pip install datasets
+
+Problem: "FileNotFoundError: datasets/enron"
+Solution: Download Module 1 datasets first
+
+Problem: "All scores are 0"
+Solution: Check email text extraction - print sample text
+
+Problem: "Out of memory"
+Solution: Reduce sample size in process script
+
+========================================
+KEY INSIGHT
+========================================
+
+Module 5 is DIFFERENT from other modules:
+  ❌ Does NOT need separate dataset download
+  ✅ REUSES existing email datasets
+  ✅ Applies DIFFERENT analysis (psychological features)
+  ✅ Creates NEW training data from same emails
+
+Think of it as:
+  Module 1 asks: "What does the email SAY?"
+  Module 5 asks: "How is the email trying to MANIPULATE you?"
+
+Same emails, different questions, different features!
+
+========================================
+ESTIMATED TIME
+========================================
+
+Setup:          5 minutes
+Download:       0 minutes (reuses Module 1)
+Processing:     10-15 minutes
+Training:       2-3 minutes
+TOTAL:          20-25 minutes
+
+========================================
+NEXT STEPS AFTER MODULE 5
+========================================
+
+1. Train Module 5 model
+2. Save the trained model
+3. Integrate with other modules
+4. Build the meta-learner (XGBoost)
+5. Complete the stacking ensemble
+
+See: G-file-formatted.md for full implementation guide
+
+========================================
+SUPPORT
+========================================
+
+Full Documentation: MODULE5-DATASET-GUIDE.md
+Complete Guide: G-file-formatted.md
+Repository: github.com/Ajinkya-Furange-Patil/Phishing-Detection-Assistant
+
+========================================

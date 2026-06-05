@@ -190,20 +190,35 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 if (chrome.contextMenus) {
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === 'scanEmail') {
-      chrome.tabs.sendMessage(tab.id, { action: 'extractEmail' }, (response) => {
+      // Check if tab is valid and content script is loaded
+      if (!tab || !tab.id) {
+        console.error('Invalid tab');
+        return;
+      }
+      
+      // Send message with better error handling
+      chrome.tabs.sendMessage(tab.id, { action: 'analyzeCurrentEmail' }, (response) => {
         if (chrome.runtime.lastError) {
-          console.log('Message sending note:', chrome.runtime.lastError.message);
+          console.log('Content script not ready:', chrome.runtime.lastError.message);
+          
+          // Try to inject content script and retry
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content-gmail.js']
+          }).then(() => {
+            // Retry after injection
+            setTimeout(() => {
+              chrome.tabs.sendMessage(tab.id, { action: 'analyzeCurrentEmail' });
+            }, 500);
+          }).catch(err => {
+            console.error('Failed to inject content script:', err);
+          });
+          
           return;
         }
         
-        if (response && response.emailData) {
-          analyzeEmailBackground(response.emailData)
-            .then(result => {
-              chrome.tabs.sendMessage(tab.id, { action: 'showWarning', result });
-            })
-            .catch(error => {
-              console.error('Scan error:', error);
-            });
+        if (response && response.success) {
+          console.log('Analysis triggered successfully');
         }
       });
     }

@@ -91,33 +91,50 @@ scanBtn.addEventListener('click', async () => {
     // Get active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Send message to content script to extract email data
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractEmail' });
+    // Check if on Gmail or Outlook
+    if (!tab.url.includes('mail.google.com') && !tab.url.includes('outlook')) {
+      alert('Please open a Gmail or Outlook email to scan.');
+      loadingOverlay.style.display = 'none';
+      return;
+    }
     
-    if (response && response.emailData) {
-      // Send to backend for analysis
-      const scanResult = await analyzeEmail(response.emailData);
-      
-      // Update statistics
-      updateStats(scanResult.isPhishing);
-      
-      // Save scan result
-      saveScanResult(scanResult);
-      
-      // Show notification if enabled
-      if (settings.showNotifications) {
-        showNotification(scanResult);
+    // Send message to content script to analyze
+    chrome.tabs.sendMessage(tab.id, { action: 'analyzeCurrentEmail' }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Content script error:', chrome.runtime.lastError);
+        
+        // Try to inject content script
+        const scriptFile = tab.url.includes('mail.google.com') ? 
+                          'content-gmail.js' : 'content-outlook.js';
+        
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: [scriptFile]
+        }).then(() => {
+          alert('Content script loaded. Please try scanning again.');
+        }).catch(err => {
+          alert('Error: Content script could not be loaded. Please refresh the page and try again.');
+        });
+        
+        loadingOverlay.style.display = 'none';
+        return;
       }
       
-      // Reload results
-      loadRecentResults();
-    } else {
-      alert('Could not extract email data. Please open an email first.');
-    }
+      if (response && response.success) {
+        // Analysis will be displayed by content script
+        setTimeout(() => {
+          loadRecentResults();
+          loadingOverlay.style.display = 'none';
+        }, 1000);
+      } else {
+        alert('Analysis failed: ' + (response?.error || 'Unknown error'));
+        loadingOverlay.style.display = 'none';
+      }
+    });
+    
   } catch (error) {
     console.error('Scan error:', error);
     alert('Error scanning email: ' + error.message);
-  } finally {
     loadingOverlay.style.display = 'none';
   }
 });

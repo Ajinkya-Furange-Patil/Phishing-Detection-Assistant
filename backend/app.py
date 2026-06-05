@@ -5,12 +5,24 @@ import os
 import re
 from datetime import datetime
 from advanced_analyzer import PhishingAnalyzer, format_analysis_report
+from gemini_extractor import GeminiEmailExtractor
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for browser extension
 
 # Initialize advanced analyzer
 advanced_analyzer = PhishingAnalyzer()
+
+# Initialize Gemini extractor (optional - only if API key is set)
+try:
+    gemini_extractor = GeminiEmailExtractor()
+    GEMINI_AVAILABLE = True
+    print("✓ Gemini API initialized")
+except Exception as e:
+    gemini_extractor = None
+    GEMINI_AVAILABLE = False
+    print(f"⚠ Gemini API not available: {e}")
+    print("  Extension will use fallback extraction")
 
 # Paths to models
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models', 'saved_models')
@@ -164,6 +176,173 @@ def predict():
         })
         
     except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/analyze', methods=['POST'])
+def analyze_comprehensive():
+    """
+    Comprehensive phishing analysis with detailed insights.
+    
+    Request body:
+    {
+        "email_content": "Full email body text",
+        "subject": "Email subject line",
+        "sender": "sender@email.com",
+        "model": "Optional: 'logistic' or 'random_forest' (default)"
+    }
+    
+    Returns comprehensive analysis including:
+    - Phishing probability
+    - Red flags detected
+    - Social engineering techniques
+    - Recommended actions
+    - Employee awareness advice
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Extract email components
+        email_content = data.get('email_content', data.get('body', ''))
+        subject = data.get('subject', '')
+        sender = data.get('sender', '')
+        
+        # Combine for ML prediction
+        full_text = f"{subject} {email_content}".strip()
+        
+        if not full_text:
+            return jsonify({'error': 'No email content provided'}), 400
+        
+        # Get model preference
+        model_type = data.get('model', DEFAULT_MODEL)
+        if model_type not in ['logistic', 'random_forest']:
+            model_type = DEFAULT_MODEL
+        
+        # ML prediction
+        ml_result = predict_phishing(full_text, model_type)
+        phishing_probability = ml_result['phishing_probability']
+        
+        # Comprehensive analysis
+        analysis = advanced_analyzer.analyze_email(
+            email_content=email_content,
+            subject=subject,
+            sender=sender,
+            phishing_probability=phishing_probability
+        )
+        
+        # Add ML results
+        analysis['ml_prediction'] = ml_result
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis,
+            'formatted_report': format_analysis_report(analysis)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/extract-and-analyze', methods=['POST'])
+def extract_and_analyze():
+    """
+    Complete workflow: Extract email from HTML using Gemini, then analyze.
+    
+    Request body:
+    {
+        "page_html": "Full HTML content of email page",
+        "model": "Optional: 'logistic' or 'random_forest' (default)"
+    }
+    
+    Returns:
+    - Extracted email components (via Gemini)
+    - Comprehensive phishing analysis
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        page_html = data.get('page_html', '')
+        
+        if not page_html:
+            return jsonify({'error': 'No page HTML provided'}), 400
+        
+        # Step 1: Extract email components using Gemini
+        if GEMINI_AVAILABLE and gemini_extractor:
+            print("Using Gemini API for extraction...")
+            extraction_result = gemini_extractor.extract_email_components(page_html)
+        else:
+            print("Using fallback extraction...")
+            # Fallback: Basic regex extraction
+            extraction_result = {
+                'subject': '',
+                'sender': '',
+                'body': re.sub(r'<[^>]+>', ' ', page_html)[:5000],
+                'extraction_success': False,
+                'extraction_method': 'fallback'
+            }
+        
+        # Extract components
+        email_content = extraction_result.get('body', '')
+        subject = extraction_result.get('subject', '')
+        sender = extraction_result.get('sender', '')
+        
+        if not email_content:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to extract email content from HTML',
+                'extraction_result': extraction_result
+            }), 400
+        
+        # Step 2: ML prediction
+        full_text = f"{subject} {email_content}".strip()
+        model_type = data.get('model', DEFAULT_MODEL)
+        if model_type not in ['logistic', 'random_forest']:
+            model_type = DEFAULT_MODEL
+        
+        ml_result = predict_phishing(full_text, model_type)
+        phishing_probability = ml_result['phishing_probability']
+        
+        # Step 3: Comprehensive analysis
+        analysis = advanced_analyzer.analyze_email(
+            email_content=email_content,
+            subject=subject,
+            sender=sender,
+            phishing_probability=phishing_probability
+        )
+        
+        # Add ML and extraction results
+        analysis['ml_prediction'] = ml_result
+        analysis['extraction_result'] = extraction_result
+        analysis['extraction_method'] = 'gemini' if GEMINI_AVAILABLE else 'fallback'
+        
+        return jsonify({
+            'success': True,
+            'extracted_email': {
+                'subject': subject,
+                'sender': sender,
+                'body_preview': email_content[:200] + '...' if len(email_content) > 200 else email_content,
+                'urls': extraction_result.get('urls', []),
+                'extraction_confidence': extraction_result.get('extraction_confidence', 0.5)
+            },
+            'analysis': analysis,
+            'formatted_report': format_analysis_report(analysis)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': str(e)
