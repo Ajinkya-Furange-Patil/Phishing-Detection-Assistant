@@ -1,0 +1,84 @@
+# ============================================
+# Large Dataset Files (exceed GitHub 100MB limit)
+# ============================================
+datasets/Module 1/emails.csv
+datasets/Module 4/email-data.csv
+datasets/combine dataset/final_unique_sample_25.csv
+datasets/combine dataset/simple_dataset.csv
+
+# Files exceeding GitHub's 50MB recommended limit
+datasets/Module 2/PhiUSIIL_Phishing_URL_Dataset (1).csv
+datasets/Module 3/email_dataset_100k.csv
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ============================================
+# PyTorch / ML Models (large binary files)
+# ============================================
+*.pth
+*.pt
+*.ckpt
+
+# ============================================
+# IDE
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+
+# ============================================
+# Kaggle credentials
+# ============================================
+.kaggle/
+
+# ============================================
+# Temporary files
+# ============================================
+tmp/
+temp/
+*.tmp
