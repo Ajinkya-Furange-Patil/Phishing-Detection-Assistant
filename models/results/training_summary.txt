@@ -1,0 +1,31 @@
+PHISHING DETECTION MODEL TRAINING SUMMARY
+================================================================================
+
+Training Date: 2026-06-05 13:19:26
+Dataset: ..\datasets\combine dataset\simple_dataset.csv
+Total Samples: 144,513
+Train Samples: 115,610
+Test Samples: 28,903
+Test Size: 20.0%
+Random State: 42
+
+Class Distribution:
+  Legitimate (0): 107,285 (74.24%)
+  Phishing (1):   37,228 (25.76%)
+
+Feature Extraction:
+  Method: TF-IDF
+  Max Features: 5000
+  N-gram Range: (1, 2)
+  Vocabulary Size: 5,000
+
+Model Performance:
+              Model  Accuracy  Precision   Recall  F1 Score  ROC AUC  Training Time (s)
+Logistic Regression  0.995052   0.993913 0.986839  0.990363 0.998354           0.627016
+      Random Forest  0.996229   0.995542 0.989793  0.992659 0.998587          53.501298
+
+Saved Models:
+  - logistic_regression_model.pkl
+  - random_forest_model.pkl
+
+Vectorizer: tfidf_vectorizer.pkl

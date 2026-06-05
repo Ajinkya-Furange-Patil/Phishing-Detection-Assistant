@@ -453,6 +453,45 @@ const OUTLOOK_SELECTORS = {
 };
 ```
 
+### Dataset Preprocessing
+
+The raw combined dataset (`final_unique_sample_25.csv`) contains 42+ columns including attachment metadata, URL features, header security features, and other extracted attributes. However, the Phase 1 MVP inference pipeline only processes subject and body text from the Gemini API.
+
+To ensure training data matches the inference pipeline format exactly, a preprocessing script transforms the raw dataset:
+
+**Preprocessing Script:** `prepare_bert_training_data.py`
+
+**Purpose:**
+- Extract only the columns needed for BERT training: subject, body_plain, and label
+- Simulate Gemini API normalization (HTML stripping, text cleaning, whitespace normalization)
+- Combine subject and body into a single text field matching inference format
+- Remove rows with empty content after cleaning
+
+**Transformation Steps:**
+1. Load `final_unique_sample_25.csv` and extract subject, body_plain, body_html, and label columns
+2. Use body_html as fallback if body_plain is empty
+3. Apply Gemini-like text normalization:
+   - Remove HTML tags using regex
+   - Unescape HTML entities (&nbsp; → space, &lt; → <)
+   - Remove multiple whitespace/newlines
+   - Strip leading/trailing whitespace
+4. Combine cleaned subject and body: `text = cleaned_subject + ' ' + cleaned_body`
+5. Drop rows with empty text after cleaning
+6. Output final dataset with two columns: `text` (combined subject + body), `label` (0/1)
+
+**Output:** `bert_training_data.csv`
+
+**Format:**
+```csv
+text,label
+"Subject text combined with body text...",0
+"Another subject and body combined...",1
+```
+
+This preprocessing ensures that the BERT model is trained on the exact format it will receive during inference: combined subject and body text after Gemini API normalization.
+
+**Note:** The preprocessing script must be run before training the BERT model. Without preprocessing, the model would train on 42+ features that don't exist in the inference pipeline, causing a format mismatch.
+
 ### BERT Model Training Configuration
 
 ```python
@@ -470,9 +509,14 @@ BERT_CONFIG = {
     "random_seed": 42
 }
 
-# Dataset
-DATASET_PATH = "datasets/combine dataset/final_unique_sample_25.csv"
+# Dataset (preprocessed)
+DATASET_PATH = "datasets/combine dataset/bert_training_data.csv"
+
+# Note: The preprocessing script (prepare_bert_training_data.py) must be run
+# before training to generate bert_training_data.csv from final_unique_sample_25.csv
 ```
+
+**Input Format:** The BERT model receives combined text (subject + body) matching the inference pipeline format where subject and body are extracted from Gemini API-normalized email content.
 
 ### Gemini API Integration
 
@@ -992,19 +1036,22 @@ class MultiModuleDetector:
 # 1. Install Python dependencies
 pip install -r requirements.txt
 
-# 2. Train BERT model
-python train_bert.py --dataset datasets/combine\ dataset/final_unique_sample_25.csv
+# 2. Preprocess dataset (REQUIRED BEFORE TRAINING)
+python datasets/combine\ dataset/prepare_bert_training_data.py
 
-# 3. Start Flask backend
+# 3. Train BERT model
+python train_bert.py --dataset datasets/combine\ dataset/bert_training_data.csv
+
+# 4. Start Flask backend
 python app.py
 
-# 4. Load extension in Chrome
+# 5. Load extension in Chrome
 # Navigate to chrome://extensions/
 # Enable Developer Mode
 # Click "Load unpacked"
 # Select frontend/ directory
 
-# 5. Configure API endpoint
+# 6. Configure API endpoint
 # Click extension icon
 # Set API endpoint to http://localhost:5000/api/scan
 ```

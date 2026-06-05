@@ -4,9 +4,13 @@ import pickle
 import os
 import re
 from datetime import datetime
+from advanced_analyzer import PhishingAnalyzer, format_analysis_report
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for browser extension
+
+# Initialize advanced analyzer
+advanced_analyzer = PhishingAnalyzer()
 
 # Paths to models
 MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', 'models', 'saved_models')
