@@ -63,6 +63,15 @@ models/*.pth
 models/*.pkl
 saved_models/
 
+# Packaged extensions
+phishing_detector_extension/
+
+# OS and Shortcuts
+*.lnk
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # Kaggle credentials
 .kaggle/
 

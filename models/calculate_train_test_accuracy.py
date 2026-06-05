@@ -4,12 +4,18 @@ Calculate both Training and Test Accuracy for all models
 
 import pickle
 import pandas as pd
+import sys
+import io
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import os
 
+# Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # Configuration
-DATASET_PATH = r"..\datasets\combine dataset\simple_dataset.csv"
+DATASET_PATH = r"..\combine dataset\email_dataset_100k.csv"
 MODEL_DIR = "saved_models"
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
@@ -21,19 +27,27 @@ print("=" * 80)
 # Load dataset
 print("\n[1/4] Loading Dataset...")
 df = pd.read_csv(DATASET_PATH)
-print(f"✓ Loaded {len(df):,} samples")
+print(f"[OK] Loaded {len(df):,} samples")
+
+# Determine text column name ('raw_text' in email_dataset_100k.csv, fallback to 'text')
+text_col = 'raw_text' if 'raw_text' in df.columns else 'text'
+
+# Drop NaN values in text and label columns
+df = df.dropna(subset=[text_col, 'label'])
+df['label'] = df['label'].astype(int)
+df[text_col] = df[text_col].fillna('').astype(str)
 
 # Split data
 print("\n[2/4] Splitting Data...")
-X = df['text'].values
-y = df['label'].values
+X = list(df[text_col])
+y = list(df['label'])
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
 )
 
-print(f"✓ Train: {len(X_train):,} samples")
-print(f"✓ Test:  {len(X_test):,} samples")
+print(f"[OK] Train: {len(X_train):,} samples")
+print(f"[OK] Test:  {len(X_test):,} samples")
 
 # Load vectorizer
 print("\n[3/4] Loading Vectorizer...")

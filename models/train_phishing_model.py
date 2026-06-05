@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 import time
+import sys
+import io
 import pickle
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -15,13 +17,18 @@ from sklearn.metrics import (
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # Configuration
-DATASET_PATH = r"..\datasets\combine dataset\simple_dataset.csv"
+# Point to the actual email_dataset_100k.csv dataset under the correct path relative to MODELS
+DATASET_PATH = r"..\combine dataset\email_dataset_100k.csv"
 MODEL_DIR = "saved_models"
 RESULTS_DIR = "results"
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
-SAMPLE_SIZE = None  # Set to None to use full dataset, or a number to sample
+SAMPLE_SIZE = 50000  # Default to 50k for faster training, set to None for full dataset
 
 print("=" * 80)
 print("PHISHING DETECTION MODEL TRAINING")
@@ -39,17 +46,25 @@ start_time = time.time()
 
 try:
     df = pd.read_csv(DATASET_PATH)
-    print(f"✓ Loaded {len(df):,} rows")
+    print(f"[OK] Loaded {len(df):,} rows")
     print(f"  Columns: {list(df.columns)}")
     print(f"  Loading time: {time.time() - start_time:.2f}s")
 except Exception as e:
-    print(f"✗ Error loading dataset: {e}")
+    print(f"[ERROR] Error loading dataset: {e}")
     exit(1)
 
 # Sample if needed
 if SAMPLE_SIZE and SAMPLE_SIZE < len(df):
     print(f"\nSampling {SAMPLE_SIZE:,} rows for faster training...")
     df = df.sample(n=SAMPLE_SIZE, random_state=RANDOM_STATE)
+
+# Determine text column name ('raw_text' in email_dataset_100k.csv, fallback to 'text')
+text_col = 'raw_text' if 'raw_text' in df.columns else 'text'
+
+# Drop NaN values in text and label columns
+df = df.dropna(subset=[text_col, 'label'])
+df['label'] = df['label'].astype(int)
+df[text_col] = df[text_col].fillna('').astype(str)
 
 # Step 2: Data Overview
 print("\n[2/7] Data Overview...")
@@ -58,19 +73,20 @@ print(f"  Class distribution:")
 print(f"    Legitimate (0): {(df['label'] == 0).sum():,} ({(df['label'] == 0).sum()/len(df)*100:.2f}%)")
 print(f"    Phishing (1):   {(df['label'] == 1).sum():,} ({(df['label'] == 1).sum()/len(df)*100:.2f}%)")
 print(f"  Missing values: {df.isnull().sum().sum()}")
-print(f"  Average text length: {df['text'].str.len().mean():.0f} characters")
+print(f"  Average text length: {df[text_col].str.len().mean():.0f} characters")
 
 # Step 3: Train-Test Split
 print("\n[3/7] Splitting Data...")
-X = df['text'].values
-y = df['label'].values
+# Use list() instead of .values to avoid pandas/sklearn Arrow compatibility errors
+X = list(df[text_col])
+y = list(df['label'])
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
 )
 
-print(f"✓ Train set: {len(X_train):,} samples")
-print(f"✓ Test set:  {len(X_test):,} samples")
+print(f"[OK] Train set: {len(X_train):,} samples")
+print(f"[OK] Test set:  {len(X_test):,} samples")
 print(f"  Train class distribution: {np.bincount(y_train)}")
 print(f"  Test class distribution:  {np.bincount(y_test)}")
 

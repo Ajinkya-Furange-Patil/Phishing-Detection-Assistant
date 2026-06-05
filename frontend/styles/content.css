@@ -1,21 +1,27 @@
-/* Content script styles for email warning banners */
+/* Modern Frosted Cyber Security Warning Banners injected into mail clients */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 .phishing-warning-banner {
   position: relative;
   width: 100%;
-  padding: 16px;
-  margin-bottom: 16px;
-  border-radius: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  animation: slideDown 0.3s ease-out;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 
+              0 1px 3px rgba(255, 255, 255, 0.05) inset;
+  z-index: 99999;
+  animation: slideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(17, 19, 30, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-@keyframes slideDown {
+@keyframes slideDownFade {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-15px);
   }
   to {
     opacity: 1;
@@ -24,36 +30,43 @@
 }
 
 .phishing-warning-banner.danger {
-  background: linear-gradient(135deg, #FEE2E2 0%, #FED7D7 100%);
-  border: 2px solid #EF4444;
+  border-left: 5px solid #EF4444;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.1), 
+              0 0 15px rgba(239, 68, 68, 0.05),
+              0 1px 3px rgba(255, 255, 255, 0.05) inset;
 }
 
 .phishing-warning-banner.warning {
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-  border: 2px solid #F59E0B;
+  border-left: 5px solid #F59E0B;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1), 
+              0 0 15px rgba(245, 158, 11, 0.05),
+              0 1px 3px rgba(255, 255, 255, 0.05) inset;
 }
 
 .banner-content {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
 }
 
 .banner-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 2px;
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
 .phishing-warning-banner.danger .banner-icon {
-  stroke: #DC2626;
-  stroke-width: 2;
+  stroke: #EF4444;
+  stroke-width: 2.2;
+  color: #EF4444;
 }
 
 .phishing-warning-banner.warning .banner-icon {
-  stroke: #D97706;
-  stroke-width: 2;
+  stroke: #F59E0B;
+  stroke-width: 2.2;
+  color: #F59E0B;
 }
 
 .banner-text {
@@ -62,59 +75,54 @@
 
 .banner-text strong {
   display: block;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 700;
   margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
-
 .phishing-warning-banner.danger .banner-text strong {
-  color: #991B1B;
+  color: #FCA5A5;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 }
 
 .phishing-warning-banner.warning .banner-text strong {
-  color: #92400E;
+  color: #FDE047;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
 
 .banner-text p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.phishing-warning-banner.danger .banner-text p {
-  color: #7F1D1D;
-}
-
-.phishing-warning-banner.warning .banner-text p {
-  color: #78350F;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #D1D5DB;
 }
 
 .banner-close {
-  background: none;
-  border: none;
-  font-size: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s;
   flex-shrink: 0;
-}
-
-.phishing-warning-banner.danger .banner-close {
-  color: #991B1B;
-}
-
-.phishing-warning-banner.warning .banner-close {
-  color: #92400E;
+  color: #9CA3AF;
 }
 
 .banner-close:hover {
-  background: rgba(0, 0, 0, 0.1);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.banner-close:active {
+  transform: scale(0.95);
 }
