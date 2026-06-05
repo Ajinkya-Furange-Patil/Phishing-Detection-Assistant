@@ -1,0 +1,190 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║      PHISHING DETECTION ASSISTANT - BROWSER EXTENSION                  ║
+║                     Quick Start Guide                                  ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+🚀 GET STARTED IN 3 STEPS:
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: Install Python Dependencies                                   │
+└────────────────────────────────────────────────────────────────────────┘
+
+Open command prompt in this folder and run:
+> pip install flask flask-cors pillow
+
+Or simply double-click: setup.bat
+
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: Start the Backend                                             │
+└────────────────────────────────────────────────────────────────────────┘
+
+Run the API server:
+> python api-example.py
+
+You should see: "Backend running on http://localhost:5000"
+
+Keep this window open!
+
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: Install Browser Extension                                     │
+└────────────────────────────────────────────────────────────────────────┘
+
+Chrome/Edge:
+1. Open chrome://extensions/ or edge://extensions/
+2. Turn ON "Developer mode" (top right toggle)
+3. Click "Load unpacked"
+4. Select this "frontend" folder
+5. Done! Extension icon appears in toolbar
+
+Firefox:
+1. Open about:debugging#/runtime/this-firefox
+2. Click "Load Temporary Add-on"
+3. Select manifest.json from this folder
+
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: Test It!                                                      │
+└────────────────────────────────────────────────────────────────────────┘
+
+1. Open Gmail (https://mail.google.com) or Outlook
+2. Open any email
+3. Click the extension icon
+4. Click "Scan Current Email"
+5. See the phishing analysis results!
+
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 FEATURES:
+
+✅ Real-time phishing detection
+✅ Works with Gmail, Outlook, Office 365
+✅ AI-powered 5-module analysis:
+   • Content Analysis (BERT)
+   • URL Detection
+   • Header Verification
+   • Attachment Scanning
+   • Behavioral Profiling
+✅ Visual threat warnings
+✅ Statistics dashboard
+✅ Auto-scan mode
+✅ Browser notifications
+
+═══════════════════════════════════════════════════════════════════════
+
+🔧 CONFIGURATION:
+
+1. Click extension icon
+2. Scroll to Settings
+3. Configure:
+   • API Endpoint: http://localhost:5000/api/scan
+   • Auto-scan emails: ON
+   • Show notifications: ON
+4. Click "Save Settings"
+
+═══════════════════════════════════════════════════════════════════════
+
+❓ TROUBLESHOOTING:
+
+Problem: Extension not loading
+Solution: Make sure all files are present:
+   ✓ manifest.json
+   ✓ popup.html, popup.js
+   ✓ background.js
+   ✓ content-gmail.js, content-outlook.js
+   ✓ styles/popup.css, styles/content.css
+   ✓ icons/ folder with icon files
+
+Problem: "Cannot connect to API"
+Solution: 
+   1. Check backend is running (python api-example.py)
+   2. Open http://localhost:5000/api/health in browser
+   3. Should see: {"status": "healthy"}
+
+Problem: Email not being scanned
+Solution:
+   1. Refresh the email page
+   2. Check browser console (F12) for errors
+   3. Verify you're on Gmail or Outlook
+
+Problem: Icons not showing
+Solution:
+   Run: python create-icons.py
+   Or download icons from: https://favicon.io/
+
+═══════════════════════════════════════════════════════════════════════
+
+📁 FILE STRUCTURE:
+
+frontend/
+├── manifest.json          ← Extension configuration
+├── popup.html            ← User interface
+├── popup.js              ← UI logic
+├── background.js         ← Background service
+├── content-gmail.js      ← Gmail integration
+├── content-outlook.js    ← Outlook integration
+├── api-example.py        ← Backend API
+├── styles/
+│   ├── popup.css        ← UI styling
+│   └── content.css      ← Warning banner styles
+├── icons/               ← Extension icons
+├── README.md            ← Full documentation
+├── INSTALLATION.md      ← Detailed setup guide
+└── QUICKSTART.txt       ← This file
+
+═══════════════════════════════════════════════════════════════════════
+
+🎯 NEXT STEPS:
+
+1. Test with real emails on Gmail/Outlook
+2. Integrate your trained ML models (see README.md)
+3. Replace api-example.py with full implementation
+4. Deploy to production (see INSTALLATION.md)
+5. Submit to Chrome Web Store
+
+═══════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION:
+
+README.md        - Complete feature documentation
+INSTALLATION.md  - Detailed setup and troubleshooting
+Main project     - ../README.md for ML model info
+
+═══════════════════════════════════════════════════════════════════════
+
+🔒 SECURITY & PRIVACY:
+
+✓ No email data is stored
+✓ All analysis on your own backend
+✓ No tracking or analytics
+✓ Minimal browser permissions
+✓ Open source - review the code!
+
+═══════════════════════════════════════════════════════════════════════
+
+💡 TIPS:
+
+• Use auto-scan for automatic protection
+• Right-click on email page → "Scan this email"
+• Check statistics to see threats blocked
+• Recent scans shown in popup
+• Notifications alert you to threats immediately
+
+═══════════════════════════════════════════════════════════════════════
+
+🤝 SUPPORT:
+
+Issues? Questions?
+1. Check README.md and INSTALLATION.md
+2. Review browser console for errors (F12)
+3. Check backend logs
+4. Open GitHub issue with error details
+
+═══════════════════════════════════════════════════════════════════════
+
+Made with ❤️ for Email Security
+Protecting inboxes, one email at a time 📧🛡️
+
+Version 1.0.0 | June 2026

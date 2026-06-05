@@ -1,0 +1,120 @@
+/* Content script styles for email warning banners */
+
+.phishing-warning-banner {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phishing-warning-banner.danger {
+  background: linear-gradient(135deg, #FEE2E2 0%, #FED7D7 100%);
+  border: 2px solid #EF4444;
+}
+
+.phishing-warning-banner.warning {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 2px solid #F59E0B;
+}
+
+.banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.banner-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.phishing-warning-banner.danger .banner-icon {
+  stroke: #DC2626;
+  stroke-width: 2;
+}
+
+.phishing-warning-banner.warning .banner-icon {
+  stroke: #D97706;
+  stroke-width: 2;
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.banner-text strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+
+.phishing-warning-banner.danger .banner-text strong {
+  color: #991B1B;
+}
+
+.phishing-warning-banner.warning .banner-text strong {
+  color: #92400E;
+}
+
+.banner-text p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.phishing-warning-banner.danger .banner-text p {
+  color: #7F1D1D;
+}
+
+.phishing-warning-banner.warning .banner-text p {
+  color: #78350F;
+}
+
+.banner-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.phishing-warning-banner.danger .banner-close {
+  color: #991B1B;
+}
+
+.phishing-warning-banner.warning .banner-close {
+  color: #92400E;
+}
+
+.banner-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
