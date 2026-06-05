@@ -164,7 +164,8 @@ def main():
     files_to_check = {
         "email_dataset_100k.csv": os.path.join(folder, "email_dataset_100k.csv"),
         "email-data.csv": os.path.join(folder, "email-data.csv"),
-        "emails.csv": os.path.join(folder, "emails.csv")
+        "emails.csv": os.path.join(folder, "emails.csv"),
+        "PhiUSIIL_Phishing_URL_Dataset.csv": os.path.join(folder, "PhiUSIIL_Phishing_URL_Dataset.csv")
     }
     
     for name, path in files_to_check.items():
@@ -183,7 +184,6 @@ def main():
     print(f"Loaded {len(df1)} rows.")
     
     # Cleaning df1
-    df1 = df1.drop_duplicates(subset=['raw_text', 'message_id'], keep='first')
     df1['source'] = 'email_dataset_100k'
     
     # Ensure all target columns exist and are typed
@@ -221,9 +221,6 @@ def main():
     for chunk in pd.read_csv(files_to_check["email-data.csv"], chunksize=chunk_size):
         chunk_idx += 1
         print(f"Processing attachment data chunk {chunk_idx}...")
-        
-        # Deduplicate chunk
-        chunk = chunk.drop_duplicates(subset=['email_id'], keep='first')
         
         # Mapping
         chunk['from_address'] = chunk['sender_email']
@@ -265,7 +262,6 @@ def main():
     enron_chunk_size = 50000
     enron_chunk_idx = 0
     total_enron_rows = 0
-    seen_message_ids = set()
     
     for chunk in pd.read_csv(files_to_check["emails.csv"], chunksize=enron_chunk_size):
         enron_chunk_idx += 1
@@ -275,12 +271,6 @@ def main():
         for msg in chunk['message']:
             parsed = parse_raw_message(msg)
             if parsed:
-                # Memory efficient deduplication of Message-ID
-                msg_id = parsed['message_id']
-                if msg_id:
-                    if msg_id in seen_message_ids:
-                        continue
-                    seen_message_ids.add(msg_id)
                 parsed_chunk_data.append(parsed)
                 
         if parsed_chunk_data:
@@ -296,6 +286,43 @@ def main():
             total_enron_rows += len(df_parsed_chunk)
             
     print(f"Finished emails.csv: processed {total_enron_rows} rows.")
+
+    # 4. PROCESS PhiUSIIL_Phishing_URL_Dataset.csv in chunks
+    print("\n--- [4/4] Processing PhiUSIIL_Phishing_URL_Dataset.csv in chunks ---")
+    phi_chunk_size = 100000
+    phi_chunk_idx = 0
+    total_phi_rows = 0
+    
+    for chunk in pd.read_csv(files_to_check["PhiUSIIL_Phishing_URL_Dataset.csv"], chunksize=phi_chunk_size):
+        phi_chunk_idx += 1
+        print(f"Processing PhiUSIIL chunk {phi_chunk_idx}...")
+        
+        # Mappings
+        chunk['raw_text'] = chunk['URL']
+        chunk['body_plain'] = chunk['URL']
+        chunk['from_domain'] = chunk['Domain']
+        # Label inversion (1 -> 0, 0 -> 1)
+        chunk['label'] = 1 - chunk['label'].fillna(1).astype(int)
+        chunk['source'] = 'phiusiil_urls'
+        chunk['num_urls'] = 1
+        chunk['has_html'] = (chunk['LineOfCode'] > 0).astype(int)
+        
+        # Fill missing unified columns with NaNs/defaults
+        for col in unified_columns:
+            if col not in chunk.columns:
+                chunk[col] = np.nan
+                
+        # Fill flag/count columns with 0
+        chunk['has_attachments'] = 0
+        chunk['attachment_count'] = 0
+        chunk['attachment_is_archive'] = 0
+        chunk['attachment_is_executable'] = 0
+        
+        # Append chunk
+        chunk.to_csv(output_path, mode='a', header=False, index=False, columns=unified_columns)
+        total_phi_rows += len(chunk)
+        
+    print(f"Finished PhiUSIIL_Phishing_URL_Dataset.csv: processed {total_phi_rows} rows.")
 
     # Verification
     elapsed_time = time.time() - start_time
