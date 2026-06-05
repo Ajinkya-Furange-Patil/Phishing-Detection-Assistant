@@ -85,6 +85,13 @@ phishing_detector_extension/
 Thumbs.db
 desktop.ini
 
+# Global binary and dataset ignores (prevent GitHub limit errors)
+*.csv
+*.zip
+combine dataset/
+MODELS/Model 2/
+MODELS/Models 1/
+
 # Kaggle credentials
 # ============================================
 .kaggle/
