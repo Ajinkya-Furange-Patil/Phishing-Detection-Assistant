@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detection - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .status.online {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.offline {
+            background: #ef4444;
+            color: white;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .model-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .model-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .model-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .model-option h3 {
+            margin-bottom: 5px;
+        }
+
+        .model-option p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .btn-analyze {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-analyze:active {
+            transform: translateY(0);
+        }
+
+        .btn-analyze:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .result-icon {
+            font-size: 3em;
+        }
+
+        .result-info h2 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .result-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .badge-safe {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .metric {
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .features {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .features h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .feature-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .feature-name {
+            color: #666;
+        }
+
+        .feature-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .samples {
+            margin-top: 20px;
+        }
+
+        .samples h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .sample-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .btn-sample {
+            padding: 12px;
+            background: #f8f9ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95em;
+        }
+
+        .btn-sample:hover {
+            border-color: #667eea;
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🛡️ Phishing Detection</h1>
+            <p>AI-Powered Email Security Testing</p>
+            <div id="apiStatus" class="status offline">API: Checking...</div>
+        </div>
+
+        <!-- Input Card -->
+        <div class="main-card">
+            <div class="input-section">
+                <label for="emailText">Enter Email Text to Analyze</label>
+                <textarea id="emailText" placeholder="Paste your email subject and body here..."></textarea>
+            </div>
+
+            <div class="model-selector">
+                <div class="model-option selected" data-model="random_forest">
+                    <h3>🌲 Random Forest</h3>
+                    <p>99.62% Accuracy</p>
+                </div>
+                <div class="model-option" data-model="logistic">
+                    <h3>📊 Logistic Regression</h3>
+                    <p>99.51% Accuracy</p>
+                </div>
+            </div>
+
+            <button id="btnAnalyze" class="btn-analyze">Analyze Email</button>
+
+            <div class="samples">
+                <h3>📋 Quick Test Samples</h3>
+                <div class="sample-buttons">
+                    <button class="btn-sample" data-sample="phishing1">🚨 Urgent Account</button>
+                    <button class="btn-sample" data-sample="phishing2">🎁 Prize Winner</button>
+                    <button class="btn-sample" data-sample="legitimate1">✅ Team Meeting</button>
+                    <button class="btn-sample" data-sample="legitimate2">📧 Invoice</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing email...</p>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card" id="resultCard">
+            <div class="result-header">
+                <div class="result-icon" id="resultIcon"></div>
+                <div class="result-info">
+                    <h2 id="resultTitle"></h2>
+                    <span class="result-badge" id="resultBadge"></span>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Confidence</div>
+                    <div class="metric-value" id="confidence">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Phishing Probability</div>
+                    <div class="metric-value" id="phishingProb">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Risk Level</div>
+                    <div class="metric-value" id="riskLevel">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Model Used</div>
+                    <div class="metric-value" id="modelUsed">-</div>
+                </div>
+            </div>
+
+            <div class="features">
+                <h3>📊 Detected Features</h3>
+                <div class="feature-list" id="featureList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let selectedModel = 'random_forest';
+
+        // Sample emails
+        const samples = {
+            phishing1: "URGENT! Your account has been suspended. Click here immediately to restore access: http://suspicious-link.com/restore or your data will be deleted!",
+            phishing2: "Congratulations! You've won $1,000,000 in our lottery! Click here to claim your prize now: http://fake-lottery.com/claim. Act fast!",
+            legitimate1: "Hi team, please review the quarterly report attached. Let's discuss in tomorrow's meeting at 3pm in Conference Room B. Thanks, Sarah",
+            legitimate2: "Dear customer, thank you for your recent purchase. Your invoice #12345 is attached. If you have any questions, please contact our support team."
+        };
+
+        // Check API status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('apiStatus');
+                if (data.status === 'healthy') {
+                    statusEl.textContent = 'API: Online';
+                    statusEl.className = 'status online';
+                } else {
+                    statusEl.textContent = 'API: Error';
+                    statusEl.className = 'status offline';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('apiStatus');
+                statusEl.textContent = 'API: Offline';
+                statusEl.className = 'status offline';
+            }
+        }
+
+        // Model selection
+        document.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedModel = option.dataset.model;
+            });
+        });
+
+        // Sample button clicks
+        document.querySelectorAll('.btn-sample').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sampleKey = btn.dataset.sample;
+                document.getElementById('emailText').value = samples[sampleKey];
+            });
+        });
+
+        // Analyze button
+        document.getElementById('btnAnalyze').addEventListener('click', analyzeEmail);
+
+        async function analyzeEmail() {
+            const text = document.getElementById('emailText').value.trim();
+            
+            if (!text) {
+                alert('Please enter some email text to analyze');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('resultCard').classList.remove('show');
+            document.getElementById('btnAnalyze').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        model: selectedModel
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResult(data.prediction);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to connect to API: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('btnAnalyze').disabled = false;
+            }
+        }
+
+        function displayResult(prediction) {
+            const resultCard = document.getElementById('resultCard');
+            const isPhishing = prediction.is_phishing;
+            
+            // Set icon and title
+            document.getElementById('resultIcon').textContent = isPhishing ? '⚠️' : '✅';
+            document.getElementById('resultTitle').textContent = isPhishing ? 'Phishing Detected!' : 'Email Appears Safe';
+            
+            // Set badge
+            const badge = document.getElementById('resultBadge');
+            const riskLevel = prediction.risk_level;
+            badge.textContent = riskLevel + ' Risk';
+            badge.className = 'result-badge';
+            if (riskLevel === 'High') badge.classList.add('badge-danger');
+            else if (riskLevel === 'Medium') badge.classList.add('badge-warning');
+            else badge.classList.add('badge-safe');
+            
+            // Set metrics
+            document.getElementById('confidence').textContent = (prediction.confidence * 100).toFixed(1) + '%';
+            document.getElementById('phishingProb').textContent = (prediction.phishing_probability * 100).toFixed(1) + '%';
+            document.getElementById('riskLevel').textContent = prediction.risk_level;
+            document.getElementById('modelUsed').textContent = prediction.model_used.replace('_', ' ').toUpperCase();
+            
+            // Display features
+            const featureList = document.getElementById('featureList');
+            featureList.innerHTML = '';
+            
+            const features = prediction.features;
+            for (const [key, value] of Object.entries(features)) {
+                const featureItem = document.createElement('div');
+                featureItem.className = 'feature-item';
+                featureItem.innerHTML = `
+                    <span class="feature-name">${key.replace(/_/g, ' ')}</span>
+                    <span class="feature-value">${value}</span>
+                `;
+                featureList.appendChild(featureItem);
+            }
+            
+            // Show result card
+            resultCard.classList.add('show');
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Check API status on load
+        checkAPIStatus();
+        setInterval(checkAPIStatus, 10000); // Check every 10 seconds
+    </script>
+</body>
+</html>
