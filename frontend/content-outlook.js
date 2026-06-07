@@ -61,8 +61,9 @@ function addWarningBanner(result) {
     existingBanner.remove();
   }
   
+  let banner = null;
   if (result.isPhishing) {
-    const banner = document.createElement('div');
+    banner = document.createElement('div');
     banner.id = 'phishing-detection-banner';
     banner.className = 'phishing-warning-banner danger';
     banner.innerHTML = `
@@ -75,7 +76,7 @@ function addWarningBanner(result) {
           <strong>⚠️ PHISHING THREAT DETECTED</strong>
           <p>This email has been flagged as potential phishing (${Math.round(result.confidence * 100)}% confidence). Do not click links or download attachments.</p>
         </div>
-        <button class="banner-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        <button class="banner-close">×</button>
       </div>
     `;
     
@@ -85,7 +86,7 @@ function addWarningBanner(result) {
       emailContainer.insertBefore(banner, emailContainer.firstChild);
     }
   } else if (result.confidence < 0.7) {
-    const banner = document.createElement('div');
+    banner = document.createElement('div');
     banner.id = 'phishing-detection-banner';
     banner.className = 'phishing-warning-banner warning';
     banner.innerHTML = `
@@ -98,7 +99,7 @@ function addWarningBanner(result) {
           <strong>⚠ CAUTION</strong>
           <p>This email contains some suspicious elements. Verify sender before taking action.</p>
         </div>
-        <button class="banner-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        <button class="banner-close">×</button>
       </div>
     `;
     
@@ -107,13 +108,42 @@ function addWarningBanner(result) {
       emailContainer.insertBefore(banner, emailContainer.firstChild);
     }
   }
+  
+  if (banner) {
+    const closeBtn = banner.querySelector('.banner-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        banner.remove();
+      });
+    }
+  }
 }
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractEmail') {
-    const emailData = extractOutlookEmailData();
-    sendResponse({ emailData });
+    const emailData = extractOutlookEmailData() || {};
+    const pageHTML = document.documentElement.outerHTML;
+    const emailView = document.querySelector('[role="document"]') || 
+                     document.querySelector('.rps_42b4') ||
+                     document.body;
+    const emailHTML = emailView ? emailView.outerHTML : pageHTML;
+    sendResponse({ 
+      success: true,
+      emailData: {
+        subject: emailData.subject || document.title || '',
+        sender: emailData.sender || '',
+        body: emailData.body || '',
+        links: emailData.links || [],
+        headers: emailData.headers || {},
+        attachments: emailData.attachments || [],
+        platform: 'outlook',
+        emailHTML: emailHTML,
+        fullHTML: pageHTML,
+        pageTitle: document.title,
+        url: window.location.href
+      }
+    });
   } else if (request.action === 'showWarning') {
     addWarningBanner(request.result);
     sendResponse({ success: true });
@@ -121,17 +151,72 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
-// Auto-scan if enabled
+let isAutoScanEnabled = false;
+let lastScannedEmailKey = '';
+let autoScanTimeout = null;
+
+function runOutlookAutoScan() {
+  const emailData = extractOutlookEmailData();
+  if (!emailData || !emailData.subject || !emailData.body) return;
+  
+  const currentKey = `${emailData.sender}_${emailData.subject}_${emailData.body.substring(0, 100)}`;
+  if (currentKey === lastScannedEmailKey) return;
+  
+  lastScannedEmailKey = currentKey;
+  console.log('🔄 Auto-scanning new Outlook email:', emailData.subject);
+  
+  chrome.runtime.sendMessage({
+    action: 'analyzeEmail',
+    emailData: {
+      subject: emailData.subject,
+      sender: emailData.sender,
+      body: emailData.body
+    }
+  }, (response) => {
+    if (response && response.success && response.result) {
+      const analysisResult = response.result;
+      console.log('📊 Auto-scan analysis result:', analysisResult);
+      
+      const bannerResult = {
+        isPhishing: analysisResult.isPhishing,
+        confidence: analysisResult.confidence !== undefined ? analysisResult.confidence : (analysisResult.phishingProbability || 0)
+      };
+      
+      addWarningBanner(bannerResult);
+      
+      // Trigger desktop notification if threat detected and settings allow it
+      if (analysisResult.isPhishing) {
+        chrome.runtime.sendMessage({
+          action: 'showNotification',
+          isPhishing: analysisResult.isPhishing,
+          confidence: analysisResult.confidence !== undefined ? analysisResult.confidence : (analysisResult.phishingProbability || 0)
+        });
+      }
+    }
+  });
+}
+
+// Auto-scan live storage tracking
 chrome.storage.sync.get(['settings'], (result) => {
-  if (result.settings && result.settings.autoScan) {
-    // Monitor for email changes
-    const observer = new MutationObserver(() => {
-      // Auto-scan logic can be implemented here
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+  if (result.settings) {
+    isAutoScanEnabled = !!result.settings.autoScan;
   }
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && changes.settings) {
+    isAutoScanEnabled = !!changes.settings.newValue?.autoScan;
+  }
+});
+
+// Monitor for email changes
+const autoScanObserver = new MutationObserver(() => {
+  if (!isAutoScanEnabled) return;
+  if (autoScanTimeout) clearTimeout(autoScanTimeout);
+  autoScanTimeout = setTimeout(runOutlookAutoScan, 1000);
+});
+
+autoScanObserver.observe(document.body, {
+  childList: true,
+  subtree: true
 });

@@ -72,17 +72,46 @@ class PhishingAnalyzer:
         
         text_lower = f"{subject} {email_content}".lower()
         
+        red_flags = self._detect_red_flags(text_lower, sender)
+        social_engineering = self._detect_social_engineering(text_lower)
+        sender_analysis = self._analyze_sender(sender)
+        url_analysis = self._analyze_urls(email_content)
+        content_analysis = self._analyze_content(email_content, subject)
+        threat_indicators = self._calculate_threat_score(text_lower, sender)
+        
+        # Calculate hybrid probability:
+        # Heuristic base from threat score
+        heuristic_prob = threat_indicators['score'] / 100.0
+        
+        # Combine ML probability and Heuristic score
+        combined_prob = max(phishing_probability, heuristic_prob)
+        
+        # Check if there are specific red flags to set minimum thresholds
+        has_high_red_flag = any(flag['severity'] == 'HIGH' for flag in red_flags)
+        has_medium_red_flag = any(flag['severity'] == 'MEDIUM' for flag in red_flags)
+        
+        if has_high_red_flag:
+            combined_prob = max(combined_prob, 0.70) # Ensure it's at least 70% (HIGH risk)
+        elif has_medium_red_flag:
+            combined_prob = max(combined_prob, 0.35) # Ensure it's at least 35% (MEDIUM risk)
+            
+        # Ensure sender risk or URL risk also bumps it up
+        if sender_analysis.get('risk') == 'HIGH' or url_analysis.get('risk') == 'HIGH':
+            combined_prob = max(combined_prob, 0.75)
+        elif sender_analysis.get('risk') == 'MEDIUM' or url_analysis.get('risk') == 'MEDIUM':
+            combined_prob = max(combined_prob, 0.40)
+            
         analysis = {
-            'phishing_probability': phishing_probability,
-            'risk_level': self._determine_risk_level(phishing_probability),
-            'red_flags': self._detect_red_flags(text_lower, sender),
-            'social_engineering': self._detect_social_engineering(text_lower),
-            'sender_analysis': self._analyze_sender(sender),
-            'url_analysis': self._analyze_urls(email_content),
-            'content_analysis': self._analyze_content(email_content, subject),
-            'recommended_actions': self._generate_recommendations(phishing_probability, text_lower, sender),
+            'phishing_probability': combined_prob,
+            'risk_level': self._determine_risk_level(combined_prob),
+            'red_flags': red_flags,
+            'social_engineering': social_engineering,
+            'sender_analysis': sender_analysis,
+            'url_analysis': url_analysis,
+            'content_analysis': content_analysis,
+            'recommended_actions': self._generate_recommendations(combined_prob, text_lower, sender),
             'employee_awareness': self._generate_awareness_advice(text_lower),
-            'threat_indicators': self._calculate_threat_score(text_lower, sender),
+            'threat_indicators': threat_indicators,
             'timestamp': datetime.now().isoformat()
         }
         
@@ -541,54 +570,66 @@ class PhishingAnalyzer:
 
 
 def format_analysis_report(analysis: Dict[str, Any]) -> str:
-    """Format analysis into human-readable report."""
+    """Format analysis into a professional, formal plain-text audit report."""
     report = []
-    report.append("=" * 80)
-    report.append("🔒 PHISHING EMAIL ANALYSIS REPORT")
-    report.append("=" * 80)
-    report.append(f"\n📊 RISK ASSESSMENT")
-    report.append(f"   Phishing Probability: {analysis['phishing_probability']*100:.2f}%")
-    report.append(f"   Risk Level: {analysis['risk_level']}")
-    report.append(f"   Threat Score: {analysis['threat_indicators']['score']}/{analysis['threat_indicators']['max_score']} ({analysis['threat_indicators']['percentage']:.1f}%)")
+    report.append("+" + "-" * 78 + "+")
+    report.append("|" + " " * 24 + "PHISHING SECURITY AUDIT REPORT" + " " * 24 + "|")
+    report.append("+" + "-" * 78 + "+")
+    report.append(f"Generated On: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append(f"Security Engine: PhishGuard AI Threat Detection v2.1")
+    report.append("+" + "-" * 78 + "+")
+    
+    report.append("\n1. RISK ASSESSMENT")
+    report.append(f"   - Phishing Probability  : {analysis['phishing_probability']*100:.2f}%")
+    report.append(f"   - Risk Classification   : {analysis['risk_level']}")
+    report.append(f"   - Heuristic Threat Score: {analysis['threat_indicators']['score']}/{analysis['threat_indicators']['max_score']} ({analysis['threat_indicators']['percentage']:.1f}%)")
     
     if analysis['red_flags']:
-        report.append(f"\n🚩 RED FLAGS DETECTED ({len(analysis['red_flags'])})")
+        report.append(f"\n2. DETECTED SECURITY RED FLAGS ({len(analysis['red_flags'])})")
         for i, flag in enumerate(analysis['red_flags'], 1):
-            report.append(f"   {i}. [{flag['severity']}] {flag['type']}")
-            report.append(f"      {flag['description']}")
+            report.append(f"   [{i}] Classification: {flag['type']} (Severity: {flag['severity']})")
+            report.append(f"       Description: {flag['description']}")
+            report.append(f"       Threat Indicator: {flag['indicator']}")
     
     if analysis['social_engineering']['details']:
-        report.append(f"\n🎭 SOCIAL ENGINEERING TECHNIQUES ({analysis['social_engineering']['techniques_detected']})")
-        for tech in analysis['social_engineering']['details']:
-            report.append(f"   • {tech['technique']} [{tech['severity']}]")
-            report.append(f"     {tech['explanation']}")
+        report.append(f"\n3. SOCIAL ENGINEERING TECHNIQUES IDENTIFIED ({analysis['social_engineering']['techniques_detected']})")
+        for i, tech in enumerate(analysis['social_engineering']['details'], 1):
+            report.append(f"   [{i}] Technique: {tech['technique']} (Severity: {tech['severity']})")
+            report.append(f"       Explanation: {tech['explanation']}")
     
-    report.append(f"\n✉️ SENDER ANALYSIS")
-    report.append(f"   Email: {analysis['sender_analysis'].get('email', 'N/A')}")
-    report.append(f"   Risk: {analysis['sender_analysis']['risk']}")
-    for issue in analysis['sender_analysis']['issues']:
-        report.append(f"   • {issue}")
+    report.append(f"\n4. SENDER IDENTITY ANALYSIS")
+    report.append(f"   - Sender Address: {analysis['sender_analysis'].get('email', 'N/A')}")
+    report.append(f"   - Sender Risk   : {analysis['sender_analysis']['risk']}")
+    if analysis['sender_analysis']['issues']:
+        report.append(f"   - Identity Anomalies:")
+        for issue in analysis['sender_analysis']['issues']:
+            report.append(f"     * {issue}")
     
     if analysis['url_analysis']['total_urls'] > 0:
-        report.append(f"\n🔗 URL ANALYSIS")
-        report.append(f"   Total URLs: {analysis['url_analysis']['total_urls']}")
-        report.append(f"   Risk Level: {analysis['url_analysis']['risk']}")
-        for issue in analysis['url_analysis']['issues']:
-            report.append(f"   • {issue}")
+        report.append(f"\n5. EMBEDDED URL REPUTATION ANALYSIS")
+        report.append(f"   - Total URLs Extracted: {analysis['url_analysis']['total_urls']}")
+        report.append(f"   - Link Risk Profile   : {analysis['url_analysis']['risk']}")
+        if analysis['url_analysis']['issues']:
+            report.append(f"   - URL Security Issues:")
+            for issue in analysis['url_analysis']['issues']:
+                report.append(f"     * {issue}")
     
-    report.append(f"\n📋 RECOMMENDED ACTIONS")
-    for rec in analysis['recommended_actions']:
-        report.append(f"   [{rec['priority']}] {rec['action']}")
-        report.append(f"   Reason: {rec['reason']}")
+    report.append(f"\n6. ACTIONABLE MITIGATION STEPS")
+    for i, rec in enumerate(analysis['recommended_actions'], 1):
+        report.append(f"   [{i}] Priority: {rec['priority']} | Action: {rec['action']}")
+        report.append(f"       Justification: {rec['reason']}")
+        report.append(f"       Mitigation Procedures:")
         for step in rec['steps']:
-            report.append(f"      ✓ {step}")
+            report.append(f"         [ ] {step}")
     
-    report.append(f"\n🎓 EMPLOYEE AWARENESS ADVICE")
-    for point in analysis['employee_awareness']['learning_points']:
-        report.append(f"   📌 {point['topic']}")
-        report.append(f"      Lesson: {point['lesson']}")
-        report.append(f"      Tip: {point['tip']}")
+    report.append(f"\n7. CYBERSECURITY TRAINING & AWARENESS HYGIENE")
+    for i, point in enumerate(analysis['employee_awareness']['learning_points'], 1):
+        report.append(f"   [{i}] Educational Topic: {point['topic']}")
+        report.append(f"       Key Concept      : {point['lesson']}")
+        report.append(f"       Actionable Habit : {point['tip']}")
     
-    report.append("\n" + "=" * 80)
+    report.append("\n" + "+" + "-" * 78 + "+")
+    report.append("|" + " " * 20 + "END OF CYBERSECURITY ASSESSMENT REPORT" + " " * 20 + "|")
+    report.append("+" + "-" * 78 + "+")
     
     return "\n".join(report)

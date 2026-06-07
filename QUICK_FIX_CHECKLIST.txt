@@ -1,0 +1,114 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║       🔧 QUICK FIX - Content Script Not Loading               ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+PROBLEM: Functions not found, button invisible
+CAUSE: Old script cached in memory
+
+═══════════════════════════════════════════════════════════════════
+
+FOLLOW THESE STEPS IN ORDER:
+
+[ ] Step 1: CLOSE ALL GMAIL TABS
+    ❗ This is the most important step!
+    ❗ ALL gmail.com tabs must be closed
+    ❗ Check all Chrome windows
+
+[ ] Step 2: GO TO chrome://extensions/
+    - Open new tab
+    - Type: chrome://extensions/
+    - Find "Phishing Detection Assistant"
+
+[ ] Step 3: CLICK RELOAD BUTTON
+    - Look for 🔄 circular arrow icon
+    - Click it
+    - Wait 2 seconds
+
+[ ] Step 4: CHECK FOR ERRORS
+    - Look for RED text under extension
+    - If you see "Errors" button, click it
+    - Read any error messages
+
+[ ] Step 5: OPEN FRESH GMAIL TAB
+    - Open BRAND NEW tab
+    - Go to https://mail.google.com/
+    - Wait for complete load
+    - Open an email
+
+[ ] Step 6: OPEN CONSOLE (F12)
+    - Press F12 key
+    - Click "Console" tab
+    - Look for this message:
+      
+      ═══════════════════════════════════════════════════
+      🛡️  PHISHING DETECTION: Gmail content script loaded!
+      ═══════════════════════════════════════════════════
+
+[ ] Step 7: VERIFY IN CONSOLE
+    Type this command and press Enter:
+    
+    window.PHISHING_DETECTION_LOADED
+    
+    Should return: true
+    If undefined: Script didn't load - check for errors
+
+[ ] Step 8: TEST FUNCTIONS
+    Type this and press Enter:
+    
+    typeof analyzeCurrentEmail
+    
+    Should return: "function"
+    If "undefined": Share console errors
+
+═══════════════════════════════════════════════════════════════════
+
+VERIFICATION COMMAND:
+
+Copy this into console:
+
+console.log('✅ Script:', window.PHISHING_DETECTION_LOADED ? 'LOADED' : 'NOT LOADED');
+console.log('✅ Functions:', typeof analyzeCurrentEmail === 'function' ? 'FOUND' : 'NOT FOUND');
+console.log('✅ Button:', document.getElementById('phishing-scan-btn') ? 'FOUND' : 'NOT FOUND');
+
+ALL should show "LOADED", "FOUND", "FOUND"
+
+═══════════════════════════════════════════════════════════════════
+
+IF STILL NOT WORKING:
+
+Share these in console output:
+
+1. Any RED error messages
+2. Result of: window.PHISHING_DETECTION_LOADED
+3. Result of: typeof analyzeCurrentEmail
+4. Screenshot of chrome://extensions/ page
+
+═══════════════════════════════════════════════════════════════════
+
+WHY THIS WORKS:
+
+Chrome caches content scripts. When you update the extension but 
+keep Gmail tabs open, the OLD script stays active. You MUST close 
+Gmail tabs BEFORE reloading extension to clear the cache.
+
+═══════════════════════════════════════════════════════════════════
+
+AFTER SUCCESSFUL RELOAD:
+
+Run this in console to test everything:
+
+analyzeCurrentEmail().then(r => {
+    console.log('Result:', r);
+    displayAnalysisResults(r);
+});
+
+Should see:
+- Progress messages in console
+- Animated popup on screen
+- Risk analysis display
+
+🎉 IF THIS WORKS, YOU'RE DONE!
+
+╚════════════════════════════════════════════════════════════════╝

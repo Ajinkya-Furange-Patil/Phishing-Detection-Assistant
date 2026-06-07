@@ -17,11 +17,11 @@ advanced_analyzer = PhishingAnalyzer()
 try:
     gemini_extractor = GeminiEmailExtractor()
     GEMINI_AVAILABLE = True
-    print("✓ Gemini API initialized")
+    print("[OK] Gemini API initialized")
 except Exception as e:
     gemini_extractor = None
     GEMINI_AVAILABLE = False
-    print(f"⚠ Gemini API not available: {e}")
+    print(f"[WARN] Gemini API not available: {e}")
     print("  Extension will use fallback extraction")
 
 # Paths to models
@@ -38,21 +38,21 @@ print("=" * 80)
 try:
     with open(VECTORIZER_PATH, 'rb') as f:
         vectorizer = pickle.load(f)
-    print("✓ TF-IDF Vectorizer loaded")
+    print("[OK] TF-IDF Vectorizer loaded")
     
     with open(LOGISTIC_MODEL_PATH, 'rb') as f:
         logistic_model = pickle.load(f)
-    print("✓ Logistic Regression model loaded")
+    print("[OK] Logistic Regression model loaded")
     
     with open(RANDOM_FOREST_PATH, 'rb') as f:
         random_forest_model = pickle.load(f)
-    print("✓ Random Forest model loaded")
+    print("[OK] Random Forest model loaded")
     
     print("\nModels loaded successfully!")
     print("=" * 80)
     
 except Exception as e:
-    print(f"✗ Error loading models: {e}")
+    print(f"[ERROR] Error loading models: {e}")
     print("Please ensure models are trained and saved in the correct location.")
     exit(1)
 
@@ -278,19 +278,38 @@ def extract_and_analyze():
         if not page_html:
             return jsonify({'error': 'No page HTML provided'}), 400
         
+        print(f"\n[REQUEST] Received analysis request ({len(page_html)} chars of HTML)")
+        
         # Step 1: Extract email components using Gemini
         if GEMINI_AVAILABLE and gemini_extractor:
-            print("Using Gemini API for extraction...")
+            print("   Using Gemini API for extraction...")
             extraction_result = gemini_extractor.extract_email_components(page_html)
         else:
-            print("Using fallback extraction...")
+            print("   Using fallback extraction (no Gemini API key)...")
             # Fallback: Basic regex extraction
+            stripped_text = re.sub(r'<[^>]+>', ' ', page_html)
+            stripped_text = re.sub(r'\s+', ' ', stripped_text).strip()
+            
+            # Try to find subject from common patterns
+            subject = ''
+            subject_match = re.search(r'<title>([^<]+)</title>', page_html, re.IGNORECASE)
+            if subject_match:
+                subject = subject_match.group(1).strip()
+            
+            # Try to find sender email
+            sender = ''
+            email_matches = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', page_html)
+            if email_matches:
+                sender = email_matches[0]
+            
             extraction_result = {
-                'subject': '',
-                'sender': '',
-                'body': re.sub(r'<[^>]+>', ' ', page_html)[:5000],
+                'subject': subject,
+                'sender': sender,
+                'body': stripped_text[:5000],
+                'urls': re.findall(r'https?://[^\s<>"]+', page_html),
                 'extraction_success': False,
-                'extraction_method': 'fallback'
+                'extraction_method': 'fallback',
+                'extraction_confidence': 0.4
             }
         
         # Extract components
@@ -298,12 +317,20 @@ def extract_and_analyze():
         subject = extraction_result.get('subject', '')
         sender = extraction_result.get('sender', '')
         
+        # If body is still empty, use stripped HTML as last resort
+        if not email_content:
+            print("   [WARN] Empty body from extraction, using stripped HTML as fallback")
+            email_content = re.sub(r'<[^>]+>', ' ', page_html)
+            email_content = re.sub(r'\s+', ' ', email_content).strip()[:5000]
+        
         if not email_content:
             return jsonify({
                 'success': False,
-                'error': 'Failed to extract email content from HTML',
+                'error': 'Failed to extract any text content from HTML',
                 'extraction_result': extraction_result
             }), 400
+        
+        print(f"   [OK] Extracted: subject='{subject[:50]}', sender='{sender}', body={len(email_content)} chars")
         
         # Step 2: ML prediction
         full_text = f"{subject} {email_content}".strip()
@@ -313,6 +340,8 @@ def extract_and_analyze():
         
         ml_result = predict_phishing(full_text, model_type)
         phishing_probability = ml_result['phishing_probability']
+        
+        print(f"   [ML] Result: phishing_prob={phishing_probability:.4f}, risk={ml_result['risk_level']}")
         
         # Step 3: Comprehensive analysis
         analysis = advanced_analyzer.analyze_email(
@@ -326,6 +355,8 @@ def extract_and_analyze():
         analysis['ml_prediction'] = ml_result
         analysis['extraction_result'] = extraction_result
         analysis['extraction_method'] = 'gemini' if GEMINI_AVAILABLE else 'fallback'
+        
+        print(f"   [DONE] Analysis complete! Risk: {analysis['risk_level']}, Threat Score: {analysis['threat_indicators']['score']}")
         
         return jsonify({
             'success': True,
@@ -347,6 +378,53 @@ def extract_and_analyze():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/extract-fields', methods=['POST'])
+def extract_fields():
+    """
+    Extract email components (subject, sender, body) from HTML content using Gemini.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'}), 400
+            
+        page_html = data.get('page_html', '')
+        if not page_html:
+            return jsonify({'success': False, 'error': 'No page HTML provided'}), 400
+            
+        print(f"\n[REQUEST] Received extraction request ({len(page_html)} chars of HTML)")
+        
+        # Step 1: Extract email components using Gemini
+        if GEMINI_AVAILABLE and gemini_extractor:
+            print("   Using Gemini API for extraction...")
+            extraction_result = gemini_extractor.extract_email_components(page_html)
+        else:
+            print("   Using fallback extraction...")
+            from gemini_extractor import GeminiEmailExtractor
+            # Create a temporary instance to call the fallback method
+            dummy = GeminiEmailExtractor(api_key="DUMMY")
+            extraction_result = dummy._fallback_extraction(page_html)
+            
+        return jsonify({
+            'success': True,
+            'extracted_email': {
+                'subject': extraction_result.get('subject', ''),
+                'sender': extraction_result.get('sender', ''),
+                'body': extraction_result.get('body', ''),
+                'extraction_method': 'gemini' if GEMINI_AVAILABLE else 'fallback',
+                'extraction_confidence': extraction_result.get('extraction_confidence', 0.5)
+            }
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 @app.route('/predict/batch', methods=['POST'])
 def predict_batch():

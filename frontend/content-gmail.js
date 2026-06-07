@@ -38,11 +38,17 @@ async function analyzeCurrentEmail() {
         const scrapedData = scrapeEmailPage();
         console.log('✅ Scraped', scrapedData.emailHTML.length, 'characters');
         
+        // Retrieve endpoint from sync settings dynamically
+        const settings = await chrome.storage.sync.get(['settings']);
+        const customEndpoint = settings.settings?.apiEndpoint || 'http://localhost:5000/analyze';
+        const apiUrl = new URL(customEndpoint);
+        const extractAndAnalyzeUrl = `${apiUrl.origin}/extract-and-analyze`;
+        
         console.log('🌐 Step 2: Sending to backend for analysis...');
-        console.log('   Backend URL: http://localhost:5000/extract-and-analyze');
+        console.log('   Backend URL:', extractAndAnalyzeUrl);
         
         // Send to our backend API
-        const response = await fetch('http://localhost:5000/extract-and-analyze', {
+        const response = await fetch(extractAndAnalyzeUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -420,20 +426,40 @@ function showDetailedReport(result) {
         <pre style="white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #f3f4f6; padding: 20px; border-radius: 8px; overflow-x: auto;">
 ${result.formatted_report}
         </pre>
-        <button id="close-modal" style="
-            width: 100%;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 16px;
-            margin-top: 20px;
-        ">
-            Close
-        </button>
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button id="download-modal-report" style="
+                flex: 1;
+                background: #10b981;
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                📥 Download Report
+            </button>
+            <button id="close-modal" style="
+                flex: 1;
+                background: #6b7280;
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 16px;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#4b5563'" onmouseout="this.style.background='#6b7280'">
+                Close
+            </button>
+        </div>
     `;
     
     modal.appendChild(content);
@@ -444,6 +470,20 @@ ${result.formatted_report}
     });
     
     document.getElementById('close-modal').addEventListener('click', () => modal.remove());
+    
+    document.getElementById('download-modal-report').addEventListener('click', () => {
+        const textContent = result.formatted_report || '';
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const element = document.createElement('a');
+        element.setAttribute('href', url);
+        element.setAttribute('download', `phishguard_report_${Date.now()}.txt`);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+        URL.revokeObjectURL(url);
+    });
 }
 
 // Function to show notification
@@ -516,37 +556,73 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     if (request.action === 'extractEmail') {
         const scrapedData = scrapeEmailPage();
+        const gmailData = extractGmailEmailData() || {};
         sendResponse({ 
             success: true, 
-            emailData: scrapedData 
+            emailData: {
+                subject: gmailData.subject || scrapedData.pageTitle || '',
+                sender: gmailData.sender || '',
+                body: gmailData.body || '',
+                links: gmailData.links || [],
+                headers: gmailData.headers || {},
+                attachments: gmailData.attachments || [],
+                platform: 'gmail',
+                emailHTML: scrapedData.emailHTML,
+                fullHTML: scrapedData.fullHTML,
+                pageTitle: scrapedData.pageTitle,
+                url: scrapedData.url
+            }
         });
     }
+
+    if (request.action === 'showWarning') {
+        addWarningBanner(request.result);
+        sendResponse({ success: true });
+    }
+    return true; // Keep channel open for async response
 });
 
-// Add scan button to Gmail interface
+// Add scan button to Gmail interface (safely next to the subject line to prevent misclicks with the toolbar back button)
 function addScanButton() {
     // Check if button already exists
     if (document.getElementById('phishing-scan-btn')) return;
     
-    // Find Gmail toolbar
-    const toolbar = document.querySelector('[role="toolbar"]') || 
-                   document.querySelector('.asa');
+    // Target the email subject title header to place the button securely inline
+    const subjectHeader = document.querySelector('h2.hP') || 
+                          document.querySelector('[data-legacy-thread-id]')?.querySelector('h2');
     
-    if (toolbar) {
+    if (subjectHeader) {
         const scanBtn = document.createElement('button');
         scanBtn.id = 'phishing-scan-btn';
         scanBtn.innerHTML = '🛡️ Scan for Phishing';
         scanBtn.style.cssText = `
-            background: #3b82f6;
+            background: #2563eb;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 13px;
-            margin-left: 10px;
+            font-size: 12px;
+            margin-left: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s ease;
+            vertical-align: middle;
         `;
+        
+        scanBtn.addEventListener('mouseenter', () => {
+            scanBtn.style.background = '#1d4ed8';
+            scanBtn.style.transform = 'translateY(-1px)';
+            scanBtn.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.3)';
+        });
+        scanBtn.addEventListener('mouseleave', () => {
+            scanBtn.style.background = '#2563eb';
+            scanBtn.style.transform = 'none';
+            scanBtn.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
+        });
         
         scanBtn.addEventListener('click', async () => {
             scanBtn.textContent = '⏳ Scanning...';
@@ -559,7 +635,16 @@ function addScanButton() {
             scanBtn.disabled = false;
         });
         
-        toolbar.appendChild(scanBtn);
+        // Ensure flex layout parent style so items line up nicely
+        if (subjectHeader.parentElement) {
+            subjectHeader.parentElement.style.display = 'flex';
+            subjectHeader.parentElement.style.alignItems = 'center';
+            subjectHeader.parentElement.style.flexWrap = 'wrap';
+            subjectHeader.parentElement.style.gap = '8px';
+        }
+        
+        // Append next to the subject header
+        subjectHeader.parentNode.insertBefore(scanBtn, subjectHeader.nextSibling);
     }
 }
 
@@ -632,8 +717,9 @@ function addWarningBanner(result) {
     existingBanner.remove();
   }
   
+  let banner = null;
   if (result.isPhishing) {
-    const banner = document.createElement('div');
+    banner = document.createElement('div');
     banner.id = 'phishing-detection-banner';
     banner.className = 'phishing-warning-banner danger';
     banner.innerHTML = `
@@ -646,7 +732,7 @@ function addWarningBanner(result) {
           <strong>⚠️ PHISHING THREAT DETECTED</strong>
           <p>This email has been flagged as potential phishing (${Math.round(result.confidence * 100)}% confidence). Do not click links or download attachments.</p>
         </div>
-        <button class="banner-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        <button class="banner-close">×</button>
       </div>
     `;
     
@@ -656,7 +742,7 @@ function addWarningBanner(result) {
       emailContainer.insertBefore(banner, emailContainer.firstChild);
     }
   } else if (result.confidence < 0.7) {
-    const banner = document.createElement('div');
+    banner = document.createElement('div');
     banner.id = 'phishing-detection-banner';
     banner.className = 'phishing-warning-banner warning';
     banner.innerHTML = `
@@ -669,7 +755,7 @@ function addWarningBanner(result) {
           <strong>⚠ CAUTION</strong>
           <p>This email contains some suspicious elements. Verify sender before taking action.</p>
         </div>
-        <button class="banner-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        <button class="banner-close">×</button>
       </div>
     `;
     
@@ -678,31 +764,85 @@ function addWarningBanner(result) {
       emailContainer.insertBefore(banner, emailContainer.firstChild);
     }
   }
+  
+  if (banner) {
+    const closeBtn = banner.querySelector('.banner-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        banner.remove();
+      });
+    }
+  }
 }
 
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'extractEmail') {
-    const emailData = extractGmailEmailData();
-    sendResponse({ emailData });
-  } else if (request.action === 'showWarning') {
-    addWarningBanner(request.result);
-    sendResponse({ success: true });
+// Messaging channels are handled by the main listener above.
+
+let isAutoScanEnabled = false;
+let lastScannedEmailKey = '';
+let autoScanTimeout = null;
+
+function runGmailAutoScan() {
+  const emailData = extractGmailEmailData();
+  if (!emailData || !emailData.subject || !emailData.body) return;
+  
+  const currentKey = `${emailData.sender}_${emailData.subject}_${emailData.body.substring(0, 100)}`;
+  if (currentKey === lastScannedEmailKey) return;
+  
+  lastScannedEmailKey = currentKey;
+  console.log('🔄 Auto-scanning new email:', emailData.subject);
+  
+  chrome.runtime.sendMessage({
+    action: 'analyzeEmail',
+    emailData: {
+      subject: emailData.subject,
+      sender: emailData.sender,
+      body: emailData.body
+    }
+  }, (response) => {
+    if (response && response.success && response.result) {
+      const analysisResult = response.result;
+      console.log('📊 Auto-scan analysis result:', analysisResult);
+      
+      const bannerResult = {
+        isPhishing: analysisResult.isPhishing,
+        confidence: analysisResult.confidence !== undefined ? analysisResult.confidence : (analysisResult.phishingProbability || 0)
+      };
+      
+      addWarningBanner(bannerResult);
+      
+      // Trigger desktop notification if threat detected and settings allow it
+      if (analysisResult.isPhishing) {
+        chrome.runtime.sendMessage({
+          action: 'showNotification',
+          isPhishing: analysisResult.isPhishing,
+          confidence: analysisResult.confidence !== undefined ? analysisResult.confidence : (analysisResult.phishingProbability || 0)
+        });
+      }
+    }
+  });
+}
+
+// Auto-scan live storage tracking
+chrome.storage.sync.get(['settings'], (result) => {
+  if (result.settings) {
+    isAutoScanEnabled = !!result.settings.autoScan;
   }
-  return true;
 });
 
-// Auto-scan if enabled
-chrome.storage.sync.get(['settings'], (result) => {
-  if (result.settings && result.settings.autoScan) {
-    // Monitor for email changes
-    const observer = new MutationObserver(() => {
-      // Auto-scan logic can be implemented here
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && changes.settings) {
+    isAutoScanEnabled = !!changes.settings.newValue?.autoScan;
   }
+});
+
+// Monitor for email changes
+const autoScanObserver = new MutationObserver(() => {
+  if (!isAutoScanEnabled) return;
+  if (autoScanTimeout) clearTimeout(autoScanTimeout);
+  autoScanTimeout = setTimeout(runGmailAutoScan, 1000);
+});
+
+autoScanObserver.observe(document.body, {
+  childList: true,
+  subtree: true
 });

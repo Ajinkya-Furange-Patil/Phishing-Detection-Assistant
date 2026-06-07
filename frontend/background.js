@@ -13,7 +13,8 @@ chrome.runtime.onInstalled.addListener((details) => {
       settings: {
         autoScan: true,
         showNotifications: true,
-        apiEndpoint: 'http://localhost:5000/predict'
+        darkOverlay: true,
+        apiEndpoint: 'http://localhost:5000/analyze'
       }
     });
     
@@ -79,6 +80,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (request.action === 'showNotification') {
+    chrome.storage.sync.get(['settings'], (result) => {
+      const settings = result.settings || {};
+      if (settings.showNotifications) {
+        showChromeNotification({
+          isPhishing: request.isPhishing,
+          confidence: request.confidence
+        });
+      }
+    });
+    sendResponse({ success: true });
+    return true;
+  }
 });
 
 
@@ -86,14 +101,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function analyzeEmailBackground(emailData) {
   try {
     const settings = await chrome.storage.sync.get(['settings']);
-    const apiEndpoint = settings.settings?.apiEndpoint || 'http://localhost:5000/predict';
+    const apiEndpoint = settings.settings?.apiEndpoint || 'http://localhost:5000/analyze';
     
-    // Prepare payload for our ML backend
+    // Prepare payload for our comprehensive backend
     const payload = {
+      email_content: emailData.body || '',
       subject: emailData.subject || '',
-      body: emailData.body || '',
-      text: `${emailData.subject || ''} ${emailData.body || ''}`.trim(),
-      model: 'random_forest'  // Use the best performing model
+      sender: emailData.sender || '',
+      model: 'random_forest'
     };
     
     const response = await fetch(apiEndpoint, {
@@ -111,15 +126,18 @@ async function analyzeEmailBackground(emailData) {
     const result = await response.json();
     
     // Transform response to match expected format
+    const analysis = result.analysis || {};
+    const ml = analysis.ml_prediction || {};
+    
     const transformedResult = {
-      isPhishing: result.prediction?.is_phishing || false,
-      confidence: result.prediction?.confidence || 0,
-      riskLevel: result.prediction?.risk_level || 'Low',
-      phishingProbability: result.prediction?.phishing_probability || 0,
-      legitimateProbability: result.prediction?.legitimate_probability || 1,
-      features: result.prediction?.features || {},
-      modelUsed: result.prediction?.model_used || 'unknown',
-      timestamp: result.prediction?.timestamp || new Date().toISOString()
+      isPhishing: analysis.phishing_probability >= 0.5,
+      confidence: analysis.phishing_probability || 0,
+      riskLevel: analysis.risk_level || 'Low',
+      phishingProbability: analysis.phishing_probability || 0,
+      legitimateProbability: 1.0 - (analysis.phishing_probability || 0),
+      features: ml.features || {},
+      modelUsed: ml.model_used || 'unknown',
+      timestamp: ml.timestamp || new Date().toISOString()
     };
     
     // Update stats
@@ -242,3 +260,19 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     });
   }
 });
+
+// Chrome Desktop Notification helper
+function showChromeNotification(result) {
+  const confidence = result.confidence !== undefined ? result.confidence : (result.phishingProbability || 0);
+  try {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon128.png',
+      title: '⚠️ Phishing Threat Detected!',
+      message: `This email appears to be phishing (${Math.round(confidence * 100)}% confidence)`,
+      priority: 2
+    });
+  } catch (e) {
+    console.warn('Notifications API unavailable:', e);
+  }
+}

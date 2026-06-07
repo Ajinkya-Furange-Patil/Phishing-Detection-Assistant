@@ -33,7 +33,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+models/
 # Virtual Environment
 venv/
 env/

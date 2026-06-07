@@ -21,13 +21,12 @@ class GeminiEmailExtractor:
         """
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
         if not self.api_key:
-            raise ValueError(
-                "Gemini API key not found. Set GEMINI_API_KEY environment variable "
-                "or pass api_key parameter."
-            )
+            print("[WARN] Gemini API key not found. Gemini extraction will be unavailable, falling back to regex.")
+            self.model = None
+            return
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     def extract_email_components(self, page_html: str) -> Dict[str, Any]:
         """
@@ -52,11 +51,22 @@ class GeminiEmailExtractor:
                 'extraction_confidence': float
             }
         """
+        if not self.model:
+            return self._fallback_extraction(page_html)
         
         prompt = self._create_extraction_prompt(page_html)
         
         try:
-            response = self.model.generate_content(prompt)
+            # Use a timeout to prevent hanging on slow Gemini API responses
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.model.generate_content, prompt)
+                try:
+                    response = future.result(timeout=15)  # 15 second timeout
+                except concurrent.futures.TimeoutError:
+                    print("Gemini API timed out after 15 seconds, using fallback extraction")
+                    return self._fallback_extraction(page_html)
+            
             extracted_data = self._parse_gemini_response(response.text)
             extracted_data['extraction_success'] = True
             return extracted_data
@@ -68,32 +78,21 @@ class GeminiEmailExtractor:
     def _create_extraction_prompt(self, html: str) -> str:
         """Create prompt for Gemini to extract email data."""
         
-        # Limit HTML size to avoid token limits (keep first 50000 chars)
-        html_snippet = html[:50000] if len(html) > 50000 else html
+        # Limit HTML size to avoid token limits (keep first 40000 chars)
+        html_snippet = html[:40000] if len(html) > 40000 else html
         
         prompt = f"""
-You are an expert email parser. Extract the following information from this email HTML content.
+You are a precise email parser. Your task is to extract exactly three fields from the email HTML below into a strict JSON format.
 
-IMPORTANT: Return ONLY a valid JSON object with these exact fields. No additional text.
-
-Required fields:
-- subject: The email subject line (string)
-- sender: The sender's email address (string, format: email@domain.com)
-- sender_name: The sender's display name (string)
-- body: The main email body text (string, plain text only, no HTML tags)
-- to: Recipient email address (string)
-- cc: CC recipients if any (string, comma-separated)
-- date: Email date/time (string)
-- urls: List of URLs found in email (array of strings)
-- attachments: List of attachment names (array of strings)
-- extraction_confidence: Your confidence in extraction accuracy (float 0-1)
+Required Fields:
+- "sender": The sender's email address and/or display name (e.g., "John Doe <john@domain.com>"). Parse this directly from From/Sender information in the HTML.
+- "subject": The exact subject line of the email.
+- "body": The main readable plain-text email message body. Do NOT include HTML tags, CSS styles, JavaScript code, navigation menus, header lists, or sidebar noise. ONLY extract text that is part of the actual message body content. Do NOT add or invent any text that is not explicitly present.
 
 Rules:
-1. Extract plain text only for body - remove all HTML tags
-2. If a field is not found, use empty string "" or empty array []
-3. For body, preserve paragraph structure but remove HTML
-4. Extract ALL URLs including hidden ones in href attributes
-5. Return ONLY the JSON object, nothing else
+1. Extract ONLY these 3 fields. Do not add any other keys.
+2. If a field is not found, use an empty string "".
+3. Return ONLY a valid raw JSON object. Do not include markdown code block syntax (like ```json). No intro, no explanation.
 
 HTML Content:
 {html_snippet}
@@ -142,6 +141,11 @@ JSON Response:
                 if field not in data:
                     data[field] = default
             
+            # If urls are not extracted, parse them from body text
+            if not data['urls']:
+                import re
+                data['urls'] = re.findall(r'https?://[^\s<>"]+', data.get('body', ''))
+                
             return data
             
         except json.JSONDecodeError as e:

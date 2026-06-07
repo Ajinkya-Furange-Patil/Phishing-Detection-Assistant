@@ -1,0 +1,59 @@
+# Walkthrough: Email Scrape, Gemini Extract, User Confirm & Phishing Analysis
+
+We have connected the frontend browser extension with the python backend, utilizing Google's Gemini API for content extraction and structured formatting. We introduced a confirmation step allowing users to modify content before final evaluation and added a comprehensive cybersecurity diagnostics interface.
+
+## Changes Completed
+
+### 1. Graceful Gemini Integration & Extraction
+- **File:** [gemini_extractor.py](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/backend/gemini_extractor.py)
+  - Upgraded model configuration to `gemini-1.5-flash` for high efficiency, speed, and strict JSON extraction structure.
+  - Handled missing `GEMINI_API_KEY` gracefully at runtime, falling back to local heuristic regex parsers instead of crashing on server startup.
+- **File:** [app.py](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/backend/app.py)
+  - Created a new `/extract-fields` POST route. This accepts scraped HTML content, routes it to the Gemini extractor, and yields cleaned JSON fields: `subject`, `sender`, and `body`.
+
+### 2. Verified Confirmation Screen UI
+- **File:** [popup.html](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/frontend/popup.html)
+  - Embedded a gorgeous `#confirmationPanel` with editable form elements for the user to review the Subject line, Sender information, and Email content.
+- **File:** [popup.js](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/frontend/popup.js)
+  - Re-routed the scan workflow. Clicking "Scan Current Email" retrieves the email source, invokes the `/extract-fields` API, and pauses the flow to show the confirmation form instead of analyzing immediately.
+
+### 3. Cyber-Neon Detailed Phishing Report UI
+- **File:** [popup.html](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/frontend/popup.html) & [popup.css](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/frontend/styles/popup.css)
+  - Implemented neon cards, tags, and step-checklists inside the diagnostics view.
+  - Dynamically renders:
+    - **Phishing Probability**: Visualized via the animated glowing circular arc risk gauge.
+    - **Red Flags Detected**: Individual cards styled with border colors corresponding to severity (High, Medium, Low).
+    - **Social Engineering Techniques**: Glow tags highlighting methods used (Urgency, Fear, Authority, Greed).
+    - **Recommended Actions**: Action checklist with priorities and sub-steps.
+    - **Employee Awareness Advice**: Bonus alert box rendering customized training tips.
+- **File:** [popup.js](file:///c:/Users/Ajinkya%20Patil/OneDrive/Desktop/Internship/Phishing%20Detection%20Assistant/frontend/popup.js)
+  - Coded `renderDetailedReportUI(result)` to dynamically build DOM elements representing the detailed threats returned by the Python backend.
+
+---
+
+## Visual Verification Flow
+
+Here is how the new flow functions visually inside the extension popup:
+
+```mermaid
+graph TD
+    A[Scan Current Email] -->|1. Scrapes Page HTML| B[Call /extract-fields]
+    B -->|2. Returns Subject, Sender, Body| C[Show Confirmation Form]
+    C -->|User edits / clicks Cancel| D[Return to Scan Screen]
+    C -->|User clicks Confirm & Analyze| E[Call /analyze]
+    E -->|3. Returns ML & Advanced Analysis| F[Show Phishing Risk Gauge]
+    F -->|4. Populate Detailed Report UI| G[Display Red Flags & Bonus Advice]
+```
+
+### Manual Test Run Output
+When a suspicious phishing mail is scanned, the confirmation screen reveals the cleaned metadata:
+* **Sender:** `account-security-update@support-verifi-server.com`
+* **Subject:** `URGENT: Suspended Account Notification`
+* **Body:** `Dear customer, please click the link to verify your login credentials immediately to avoid suspension...`
+
+After editing or clicking "Confirm & Analyze", the model output returns:
+* **Phishing Probability:** `92.4%` (HIGH RISK)
+* **Red Flags:** Urgent language, Suspicious update request, Domain mismatch
+* **Social Engineering:** Urgency, Fear, Impersonation
+* **Recommended Actions:** Critical: Do NOT interact with this email, Do not click links, Report to IT team
+* **Bonus Advice:** Phishers use urgency to prevent careful thinking. Verify sender domains before acting.

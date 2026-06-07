@@ -3,125 +3,410 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phishing Detection Assistant</title>
+  <title>PhishGuard — AI Stacking Ensemble Shield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/popup.css">
   <link rel="shortcut icon" href="logo.pngx" type="image/x-icon">
 </head>
 <body>
+  <!-- Ambient Particle Background -->
+  <canvas id="particleCanvas"></canvas>
+
   <div class="container">
     <!-- Header -->
     <header class="header">
       <div class="logo-container">
-        <img src="icons/icon16.png" alt="Shield Icon" class="logo">
+        <div class="logo-glow" id="logoGlow">
+          <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <div class="logo-ring-orbit"></div>
+        </div>
         <div class="header-text">
-          <h1>Phishing Detection</h1>
-          <p class="subtitle">AI-Powered Email Security</p>
+          <h1>PHISHGUARD</h1>
+          <p class="subtitle">AI Stacking Ensemble Shield</p>
         </div>
       </div>
       <div class="status-indicator" id="statusIndicator">
         <span class="status-dot"></span>
-        <span class="status-text">Active</span>
+        <span class="status-text">SHIELD ACTIVE</span>
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Quick Scan Section -->
-      <section class="scan-section">
-        <h2>Quick Scan</h2>
-        <button class="btn btn-primary scan-btn" id="scanCurrentEmail">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          Scan Current Email
-        </button>
-        <p class="help-text">Click to analyze the currently open email for phishing threats</p>
-      </section>
-
-      <!-- Stats Section -->
-      <section class="stats-section">
-        <h2>Today's Statistics</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon safe">
+      
+      <!-- TAB 1: SCAN -->
+      <div id="tab-scan" class="tab-pane active">
+        <div class="scan-radar-wrapper">
+          <div class="radar-scan" id="radarScan">
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <div class="radar-beam"></div>
+            <div class="radar-blip blip-1"></div>
+            <div class="radar-blip blip-2"></div>
+            <div class="radar-blip blip-3"></div>
+            <div class="radar-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
-            <div class="stat-info">
-              <p class="stat-value" id="safeCount">0</p>
-              <p class="stat-label">Safe Emails</p>
-            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon threat">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <div class="stat-info">
-              <p class="stat-value" id="threatCount">0</p>
-              <p class="stat-label">Threats Blocked</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Recent Scan Results -->
-      <section class="results-section">
-        <h2>Recent Scans</h2>
-        <div class="results-list" id="recentResults">
-          <div class="empty-state">
-            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          <button class="btn btn-primary scan-btn" id="scanCurrentEmail">
+            <span class="btn-shine"></span>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p>No scans yet</p>
-            <p class="empty-subtext">Scan an email to see results here</p>
+            <span class="btn-label">Scan Current Email</span>
+          </button>
+          <p class="help-text">Extracts and runs multi-modular AI testing on Gmail/Outlook active window.</p>
+        </div>
+
+        <!-- Confirmation Panel (Verify & Edit) -->
+        <div class="confirmation-panel" id="confirmationPanel" style="display: none;">
+          <div class="confirmation-header">
+            <h3>
+              <span class="diag-icon-pulse" style="background: var(--warning-color); box-shadow: 0 0 8px var(--warning-color);"></span>
+              VERIFY EMAIL CONTENT
+            </h3>
+            <span class="verdict-badge caution">REVIEWING</span>
+          </div>
+          
+          <div class="settings-item">
+            <label for="confirmSender">Sender Information</label>
+            <input type="text" id="confirmSender" class="input-field" placeholder="Extracting sender...">
+          </div>
+          
+          <div class="settings-item">
+            <label for="confirmSubject">Subject Line</label>
+            <input type="text" id="confirmSubject" class="input-field" placeholder="Extracting subject...">
+          </div>
+          
+          <div class="settings-item">
+            <label for="confirmBody">Email Content</label>
+            <textarea id="confirmBody" class="input-field" placeholder="Extracting body content..." rows="5" style="resize: vertical; min-height: 80px; font-family: var(--font-main); height: 120px; line-height: 1.4;"></textarea>
+          </div>
+          
+          <div class="confirm-btn-row" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-secondary" id="confirmCancel" style="padding: 10px 14px;">
+              Cancel
+            </button>
+            <button class="btn btn-primary" id="confirmSend" style="padding: 10px 14px;">
+              <span class="btn-shine"></span>
+              Confirm & Analyze
+            </button>
           </div>
         </div>
-      </section>
 
-      <!-- Settings Section -->
-      <section class="settings-section">
-        <h2>Settings</h2>
-        <div class="settings-item">
-          <label class="toggle-label">
-            <span>Auto-scan emails</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="autoScan" checked>
-              <span class="toggle-slider"></span>
+        <!-- Risk Diagnostic Report -->
+        <div class="diagnostics-panel" id="diagnosticsPanel" style="display: none;">
+          <div class="diagnostics-header">
+            <h3>
+              <span class="diag-icon-pulse"></span>
+              MULTI-MODULAR DIAGNOSTICS
+            </h3>
+            <span class="verdict-badge" id="verdictBadge">SAFE</span>
+          </div>
+          <div class="gauge-container">
+            <div class="glowing-gauge" id="mainGauge">
+              <svg class="gauge-arc" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" class="gauge-arc-bg" />
+                <circle cx="60" cy="60" r="52" class="gauge-arc-fill" id="gaugeArcFill" />
+              </svg>
+              <div class="gauge-text">
+                <span class="gauge-percent" id="overallRiskValue">0%</span>
+                <span class="gauge-label">RISK LEVEL</span>
+              </div>
             </div>
-          </label>
-        </div>
-        <div class="settings-item">
-          <label class="toggle-label">
-            <span>Show notifications</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="showNotifications" checked>
-              <span class="toggle-slider"></span>
+          </div>
+          
+          <div class="risk-bar-grid">
+            <div class="risk-bar-item" data-module="content">
+              <div class="risk-bar-info">
+                <span><span class="module-dot dot-content"></span>Module 1: Content Analysis</span>
+                <span id="riskContentVal">0%</span>
+              </div>
+              <div class="risk-progress-bar"><div class="risk-progress-fill" id="riskContentFill" style="width: 0%"></div></div>
             </div>
-          </label>
+            <div class="risk-bar-item" data-module="url">
+              <div class="risk-bar-info">
+                <span><span class="module-dot dot-url"></span>Module 2: URL Reputation</span>
+                <span id="riskUrlVal">0%</span>
+              </div>
+              <div class="risk-progress-bar"><div class="risk-progress-fill" id="riskUrlFill" style="width: 0%"></div></div>
+            </div>
+            <div class="risk-bar-item" data-module="header">
+              <div class="risk-bar-info">
+                <span><span class="module-dot dot-header"></span>Module 3: Header Security</span>
+                <span id="riskHeaderVal">0%</span>
+              </div>
+              <div class="risk-progress-bar"><div class="risk-progress-fill" id="riskHeaderFill" style="width: 0%"></div></div>
+            </div>
+            <div class="risk-bar-item" data-module="attachment">
+              <div class="risk-bar-info">
+                <span><span class="module-dot dot-attach"></span>Module 4: Attachment Telemetry</span>
+                <span id="riskAttachmentVal">0%</span>
+              </div>
+              <div class="risk-progress-bar"><div class="risk-progress-fill" id="riskAttachmentFill" style="width: 0%"></div></div>
+            </div>
+            <div class="risk-bar-item" data-module="behavioral">
+              <div class="risk-bar-info">
+                <span><span class="module-dot dot-behav"></span>Module 5: Behavioral Profiling</span>
+                <span id="riskBehavioralVal">0%</span>
+              </div>
+              <div class="risk-progress-bar"><div class="risk-progress-fill" id="riskBehavioralFill" style="width: 0%"></div></div>
+            </div>
+          </div>
+
+          <!-- Detailed Phishing Intelligence Output -->
+          <div class="detailed-report-section" id="detailedReportSection" style="margin-top: 20px; border-top: 1px solid var(--border-cyber); padding-top: 16px; display: none;">
+            
+            <!-- Red Flags Section -->
+            <div class="report-block" style="margin-bottom: 15px;">
+              <h4 style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">🚩 RED FLAGS DETECTED</h4>
+              <div id="redFlagsList" class="report-list" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Red flags populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Social Engineering Techniques -->
+            <div class="report-block" style="margin-bottom: 15px;">
+              <h4 style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">🎭 SOCIAL ENGINEERING TECHNIQUES</h4>
+              <div id="socialEngList" class="tech-tags-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <!-- Techniques populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Recommended Actions -->
+            <div class="report-block" style="margin-bottom: 15px;">
+              <h4 style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">📋 RECOMMENDED ACTIONS</h4>
+              <div id="recommendationsList" class="recommendations-checklist" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Actions populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Employee Awareness Advice (Bonus) -->
+            <div class="report-block bonus-block" style="margin-bottom: 10px; background: rgba(99, 102, 241, 0.04); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: var(--radius-md); padding: 12px; position: relative;">
+              <div class="bonus-badge" style="position: absolute; top: -8px; right: 10px; background: var(--primary-color); color: white; font-size: 7.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); box-shadow: 0 0 8px var(--primary-glow);">BONUS ADVICE</div>
+              <h4 style="font-size: 11px; font-weight: 700; color: #A5B4FC; margin-bottom: 8px; letter-spacing: 0.5px;">🎓 EMPLOYEE AWARENESS ADVICE</h4>
+              <div id="awarenessAdviceBox" class="awareness-box" style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                <!-- Awareness advice populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Download Button -->
+            <button class="btn btn-secondary" id="downloadReportBtn" style="margin-top: 15px; width: 100%; justify-content: center; display: inline-flex; gap: 8px; border-color: rgba(16, 185, 129, 0.4); color: var(--success-color);">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Full Report
+            </button>
+            
+          </div>
         </div>
-        <div class="settings-item">
-          <label for="apiEndpoint">API Endpoint:</label>
-          <input type="text" id="apiEndpoint" value="http://localhost:5000/api/scan" class="input-field">
-        </div>
-        <button class="btn btn-secondary" id="saveSettings">Save Settings</button>
-      </section>
+      </div>
+
+      <!-- TAB 2: STATS -->
+      <div id="tab-stats" class="tab-pane">
+        <section class="stats-section">
+          <h2>Shield Metrics (Today)</h2>
+          <div class="stats-grid">
+            <div class="stat-card" id="safeCard">
+              <div class="stat-icon safe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <p class="stat-value" id="safeCount">0</p>
+                <p class="stat-label">Verified Safe</p>
+              </div>
+              <div class="stat-sparkline safe-spark"></div>
+            </div>
+            <div class="stat-card" id="threatCard">
+              <div class="stat-icon threat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <p class="stat-value" id="threatCount">0</p>
+                <p class="stat-label">Blocked Alerts</p>
+              </div>
+              <div class="stat-sparkline threat-spark"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Threat Heatmap -->
+        <section class="heatmap-section">
+          <h2>7-Day Threat Map</h2>
+          <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div class="heatmap-legend">
+            <span class="legend-label">Low</span>
+            <div class="legend-scale">
+              <span class="legend-block lvl-0"></span>
+              <span class="legend-block lvl-1"></span>
+              <span class="legend-block lvl-2"></span>
+              <span class="legend-block lvl-3"></span>
+              <span class="legend-block lvl-4"></span>
+            </div>
+            <span class="legend-label">High</span>
+          </div>
+        </section>
+
+        <!-- Recent Scan Results -->
+        <section class="results-section">
+          <h2>Security Activity Logs</h2>
+          <div class="results-list" id="recentResults">
+            <div class="empty-state">
+              <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p>No recent scans executed</p>
+              <p class="empty-subtext">Click 'Scan Current Email' to run threat evaluation</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB 3: SETTINGS -->
+      <div id="tab-settings" class="tab-pane">
+        <section class="settings-section">
+          <h2>Configuration</h2>
+          <div class="settings-item">
+            <label class="toggle-label">
+              <span>Auto-scan Incoming Mail</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="autoScan" checked>
+                <span class="toggle-slider"></span>
+              </div>
+            </label>
+          </div>
+          <div class="settings-item">
+            <label class="toggle-label">
+              <span>Show Desktop Notifications</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="showNotifications" checked>
+                <span class="toggle-slider"></span>
+              </div>
+            </label>
+          </div>
+          <div class="settings-item">
+            <label class="toggle-label">
+              <span>Dark Scan Overlay</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="darkOverlay" checked>
+                <span class="toggle-slider"></span>
+              </div>
+            </label>
+          </div>
+          <div class="settings-item">
+            <label for="apiEndpoint">Stacking Ensemble API Endpoint:</label>
+            <input type="text" id="apiEndpoint" value="http://localhost:5000/analyze" class="input-field">
+          </div>
+          <button class="btn btn-secondary" id="saveSettings">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Save Configuration
+          </button>
+        </section>
+
+        <!-- About Card -->
+        <section class="about-section">
+          <h2>About</h2>
+          <div class="about-card">
+            <div class="about-logo-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div class="about-info">
+              <p class="about-name">PhishGuard <span class="about-ver">v2.1.0</span></p>
+              <p class="about-desc">AI-powered multi-modular phishing detection engine using stacking ensemble machine learning.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
     </main>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="tab-nav">
+      <button class="nav-item active" data-tab="tab-scan">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span>Shield</span>
+        <div class="nav-active-line"></div>
+      </button>
+      <button class="nav-item" data-tab="tab-stats">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+        </svg>
+        <span>Stats</span>
+        <div class="nav-active-line"></div>
+      </button>
+      <button class="nav-item" data-tab="tab-settings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>Config</span>
+        <div class="nav-active-line"></div>
+      </button>
+    </nav>
 
     <!-- Footer -->
     <footer class="footer">
-      <p>Protected by AI-powered detection</p>
-      <p class="version">v1.0.0</p>
+      <p>Protected by PhishGuard Advanced Engine</p>
+      <p class="version">Secure Console v2.1.0</p>
     </footer>
   </div>
 
-  <!-- Loading Overlay -->
+  <!-- Scanning Overlay with Multi-Step Progress -->
   <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-    <div class="spinner"></div>
-    <p>Analyzing email...</p>
+    <div class="scan-animation-wrapper">
+      <div class="hex-spinner">
+        <div class="hex-ring"></div>
+        <div class="hex-ring"></div>
+        <div class="hex-ring"></div>
+      </div>
+      <div class="scan-steps" id="scanSteps">
+        <div class="scan-step active" data-step="1">
+          <span class="step-icon">⬡</span>
+          <span class="step-text">Initializing scan engine...</span>
+        </div>
+        <div class="scan-step" data-step="2">
+          <span class="step-icon">⬡</span>
+          <span class="step-text">Extracting email content...</span>
+        </div>
+        <div class="scan-step" data-step="3">
+          <span class="step-icon">⬡</span>
+          <span class="step-text">Running content analysis module...</span>
+        </div>
+        <div class="scan-step" data-step="4">
+          <span class="step-icon">⬡</span>
+          <span class="step-text">Evaluating URL reputation...</span>
+        </div>
+        <div class="scan-step" data-step="5">
+          <span class="step-icon">⬡</span>
+          <span class="step-text">Stacking ensemble classification...</span>
+        </div>
+      </div>
+      <div class="scan-progress-track">
+        <div class="scan-progress-fill" id="scanProgressFill"></div>
+      </div>
+      <p class="scan-percent-text" id="scanPercentText">0%</p>
+    </div>
   </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="popup.js"></script>
 </body>
