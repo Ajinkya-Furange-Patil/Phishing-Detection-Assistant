@@ -26,6 +26,7 @@ let settings = {
 };
 
 let currentFormattedReport = '';
+let currentHtmlReport = '';
 // ═══════════════════════════════════════════════════════════
 // PARTICLE SYSTEM — Ambient floating particles
 // ═══════════════════════════════════════════════════════════
@@ -569,7 +570,8 @@ document.getElementById('confirmSend').addEventListener('click', async () => {
         modules: modules,
         risk_level: analysis.risk_level || 'Low',
         analysis: analysis,
-        formatted_report: result.formatted_report
+        formatted_report: result.formatted_report,
+        html_report: result.html_report
       };
 
       updateStats(scanResult.isPhishing);
@@ -777,7 +779,8 @@ async function analyzeEmail(emailData) {
         modules: modules,
         risk_level: analysis.risk_level || 'Low',
         analysis: analysis,
-        formatted_report: result.formatted_report
+        formatted_report: result.formatted_report,
+        html_report: result.html_report
       };
     } else {
       throw new Error(result.error || 'Invalid API response structure');
@@ -797,6 +800,7 @@ function showDiagnostics(result) {
 
   panel.style.display = 'block';
   currentFormattedReport = result.formatted_report || '';
+  currentHtmlReport = result.html_report || '';
 
   // Animated risk percentage
   const overallRisk = document.getElementById('overallRiskValue');
@@ -1010,15 +1014,15 @@ generateHeatmap();
 const downloadReportBtn = document.getElementById('downloadReportBtn');
 if (downloadReportBtn) {
   downloadReportBtn.addEventListener('click', () => {
-    if (!currentFormattedReport) {
+    if (!currentHtmlReport) {
       showToast('No active report available to download', 'warning');
       return;
     }
-    const blob = new Blob([currentFormattedReport], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([currentHtmlReport], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const element = document.createElement('a');
     element.setAttribute('href', url);
-    element.setAttribute('download', `phishguard_report_${Date.now()}.txt`);
+    element.setAttribute('download', `phishguard_report_${Date.now()}.html`);
     element.style.display = 'none';
     document.body.appendChild(element);
     element.click();
