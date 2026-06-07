@@ -5,7 +5,13 @@ Run this to see the system in action!
 
 import requests
 import json
+import sys
+import io
 from datetime import datetime
+
+# Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 API_URL = 'http://localhost:5000'
 

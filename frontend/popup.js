@@ -26,7 +26,6 @@ let settings = {
 };
 
 let currentFormattedReport = '';
-
 // ═══════════════════════════════════════════════════════════
 // PARTICLE SYSTEM — Ambient floating particles
 // ═══════════════════════════════════════════════════════════
@@ -605,6 +604,7 @@ document.getElementById('confirmSend').addEventListener('click', async () => {
     await new Promise(resolve => setTimeout(resolve, 2200));
   } finally {
     loadingOverlay.style.display = 'none';
+    if (radarEl) radarEl.classList.remove('scanning');
   }
 });
 
@@ -717,7 +717,6 @@ function renderDetailedReportUI(result) {
     }
   }
 }
-
 // ═══════════════════════════════════════════════════════════
 // API ANALYSIS
 // ═══════════════════════════════════════════════════════════
@@ -875,7 +874,6 @@ function showDiagnostics(result) {
       }
     }, index * 150);
   });
-
   // Render detailed phishing analysis report
   if (result.analysis) {
     renderDetailedReportUI(result);
@@ -953,7 +951,6 @@ saveSettingsBtn.addEventListener('click', () => {
   settings.apiEndpoint = apiEndpointInput.value;
 
   applyOverlayTheme();
-
   chromeStorageSet('sync', { settings }, () => {
     // Animated save feedback
     saveSettingsBtn.innerHTML = `
@@ -1030,7 +1027,6 @@ if (downloadReportBtn) {
     showToast('Report downloaded successfully', 'safe');
   });
 }
-
 // Show welcome toast on first open with slight delay for dramatic effect
 setTimeout(() => {
   showToast('PhishGuard shield is active', 'info', 2500);

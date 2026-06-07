@@ -1,5 +1,11 @@
 import pickle
 import os
+import sys
+import io
+
+# Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Load the trained model and vectorizer
 MODEL_DIR = "saved_models"

@@ -1,0 +1,135 @@
+================================================================================
+PHISHING DETECTION ASSISTANT - COMPLETE ACCURACY REPORT
+================================================================================
+
+DATASET INFORMATION
+--------------------------------------------------------------------------------
+Total Samples:     100,000
+Training Samples:  80,000 (80%)
+Testing Samples:   20,000 (20%)
+Legitimate Emails: 50,000 (50.00%)
+Phishing Emails:   50,000 (50.00%)
+
+================================================================================
+MODEL: Logistic Regression
+================================================================================
+
+TRAINING PERFORMANCE (on 80,000 emails)
+--------------------------------------------------------------------------------
+Accuracy:  1.0000 (100.00%)
+Precision: 1.0000 (100.00%)
+Recall:    1.0000 (100.00%)
+F1 Score:  1.0000 (100.00%)
+
+Training Confusion Matrix:
+                Predicted
+              Legit    Phishing
+Actual Legit  40000        0
+      Phish       0    40000
+
+TESTING PERFORMANCE (on 20,000 emails)
+--------------------------------------------------------------------------------
+Accuracy:  1.0000 (100.00%)
+Precision: 1.0000 (100.00%)
+Recall:    1.0000 (100.00%)
+F1 Score:  1.0000 (100.00%)
+
+Testing Confusion Matrix:
+                Predicted
+              Legit    Phishing
+Actual Legit  10000        0
+      Phish       0    10000
+
+ERROR ANALYSIS:
+--------------------------------------------------------------------------------
+False Positives: 0 (0.000%)
+  - Legitimate emails incorrectly marked as phishing
+
+False Negatives: 0 (0.000%)
+  - Phishing emails that were missed
+
+GENERALIZATION ANALYSIS:
+--------------------------------------------------------------------------------
+Accuracy Gap: 0.0000 (0.00%)
+Status: ✓ EXCELLENT - Model generalizes very well
+
+
+================================================================================
+MODEL: Random Forest
+================================================================================
+
+TRAINING PERFORMANCE (on 80,000 emails)
+--------------------------------------------------------------------------------
+Accuracy:  1.0000 (100.00%)
+Precision: 1.0000 (100.00%)
+Recall:    1.0000 (100.00%)
+F1 Score:  1.0000 (100.00%)
+
+Training Confusion Matrix:
+                Predicted
+              Legit    Phishing
+Actual Legit  40000        0
+      Phish       0    40000
+
+TESTING PERFORMANCE (on 20,000 emails)
+--------------------------------------------------------------------------------
+Accuracy:  1.0000 (100.00%)
+Precision: 1.0000 (100.00%)
+Recall:    1.0000 (100.00%)
+F1 Score:  1.0000 (100.00%)
+
+Testing Confusion Matrix:
+                Predicted
+              Legit    Phishing
+Actual Legit  10000        0
+      Phish       0    10000
+
+ERROR ANALYSIS:
+--------------------------------------------------------------------------------
+False Positives: 0 (0.000%)
+  - Legitimate emails incorrectly marked as phishing
+
+False Negatives: 0 (0.000%)
+  - Phishing emails that were missed
+
+GENERALIZATION ANALYSIS:
+--------------------------------------------------------------------------------
+Accuracy Gap: 0.0000 (0.00%)
+Status: ✓ EXCELLENT - Model generalizes very well
+
+
+================================================================================
+SUMMARY COMPARISON
+================================================================================
+
+Metric                    Logistic Reg (Train) Logistic Reg (Test) 
+--------------------------------------------------------------------------------
+Accuracy                              100.00%             100.00%
+Precision                             100.00%             100.00%
+Recall                                100.00%             100.00%
+F1 Score                              100.00%             100.00%
+
+Metric                    Random Forest (Train) Random Forest (Test)
+--------------------------------------------------------------------------------
+Accuracy                              100.00%             100.00%
+Precision                             100.00%             100.00%
+Recall                                100.00%             100.00%
+F1 Score                              100.00%             100.00%
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+✓ BEST MODEL: Logistic Regression
+  - Test Accuracy: 100.00%
+  - Test F1 Score: 100.00%
+
+USAGE:
+  - Use for production phishing detection
+  - Suitable for real-time email scanning
+  - Low false positive rate ensures minimal user disruption
+  - High recall catches most phishing attempts
+
+================================================================================
+Report generated successfully!
+================================================================================

@@ -1,15 +1,21 @@
 import pandas as pd
 import numpy as np
+import sys
+import io
 import pickle
 import os
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+
+# Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 print("=" * 80)
 print("PHISHING DETECTION - COMPLETE ACCURACY REPORT")
 print("=" * 80)
 
 # Paths
-DATASET_PATH = r"..\datasets\combine dataset\simple_dataset.csv"
+DATASET_PATH = r"..\combine dataset\email_dataset_100k.csv"
 MODEL_DIR = "saved_models"
 VECTORIZER_PATH = os.path.join(MODEL_DIR, "tfidf_vectorizer.pkl")
 LOGISTIC_PATH = os.path.join(MODEL_DIR, "logistic_regression_model.pkl")
@@ -18,19 +24,27 @@ RF_PATH = os.path.join(MODEL_DIR, "random_forest_model.pkl")
 # Load data
 print("\n[1/5] Loading Dataset...")
 df = pd.read_csv(DATASET_PATH)
-print(f"✓ Total samples: {len(df):,}")
+print(f"[OK] Total samples: {len(df):,}")
+
+# Determine text column name ('raw_text' in email_dataset_100k.csv, fallback to 'text')
+text_col = 'raw_text' if 'raw_text' in df.columns else 'text'
+
+# Drop NaN values in text and label columns
+df = df.dropna(subset=[text_col, 'label'])
+df['label'] = df['label'].astype(int)
+df[text_col] = df[text_col].fillna('').astype(str)
 
 # Split data (same as training)
 from sklearn.model_selection import train_test_split
-X = df['text'].values
-y = df['label'].values
+X = list(df[text_col])
+y = list(df['label'])
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-print(f"✓ Training samples: {len(X_train):,}")
-print(f"✓ Testing samples: {len(X_test):,}")
+print(f"[OK] Training samples: {len(X_train):,}")
+print(f"[OK] Testing samples:  {len(X_test):,}")
 
 # Load models
 print("\n[2/5] Loading Models...")
@@ -104,7 +118,7 @@ for model_name, model in models.items():
 print("\n[5/5] Generating Report...")
 
 report_path = "ACCURACY_REPORT.txt"
-with open(report_path, 'w') as f:
+with open(report_path, 'w', encoding='utf-8') as f:
     f.write("=" * 80 + "\n")
     f.write("PHISHING DETECTION ASSISTANT - COMPLETE ACCURACY REPORT\n")
     f.write("=" * 80 + "\n\n")
@@ -114,8 +128,8 @@ with open(report_path, 'w') as f:
     f.write(f"Total Samples:     {len(df):,}\n")
     f.write(f"Training Samples:  {len(X_train):,} (80%)\n")
     f.write(f"Testing Samples:   {len(X_test):,} (20%)\n")
-    f.write(f"Legitimate Emails: {(y == 0).sum():,} ({(y == 0).sum()/len(y)*100:.2f}%)\n")
-    f.write(f"Phishing Emails:   {(y == 1).sum():,} ({(y == 1).sum()/len(y)*100:.2f}%)\n")
+    f.write(f"Legitimate Emails: {y.count(0):,} ({y.count(0)/len(y)*100:.2f}%)\n")
+    f.write(f"Phishing Emails:   {y.count(1):,} ({y.count(1)/len(y)*100:.2f}%)\n")
     f.write("\n")
     
     for result in results:
@@ -123,7 +137,7 @@ with open(report_path, 'w') as f:
         f.write(f"MODEL: {result['Model']}\n")
         f.write("=" * 80 + "\n\n")
         
-        f.write("TRAINING PERFORMANCE (on 115,610 emails)\n")
+        f.write(f"TRAINING PERFORMANCE (on {len(X_train):,} emails)\n")
         f.write("-" * 80 + "\n")
         f.write(f"Accuracy:  {result['Train Accuracy']:.4f} ({result['Train Accuracy']*100:.2f}%)\n")
         f.write(f"Precision: {result['Train Precision']:.4f} ({result['Train Precision']*100:.2f}%)\n")
@@ -137,7 +151,7 @@ with open(report_path, 'w') as f:
         f.write(f"Actual Legit  {cm[0][0]:5d}    {cm[0][1]:5d}\n")
         f.write(f"      Phish   {cm[1][0]:5d}    {cm[1][1]:5d}\n\n")
         
-        f.write("TESTING PERFORMANCE (on 28,903 emails)\n")
+        f.write(f"TESTING PERFORMANCE (on {len(y_test):,} emails)\n")
         f.write("-" * 80 + "\n")
         f.write(f"Accuracy:  {result['Test Accuracy']:.4f} ({result['Test Accuracy']*100:.2f}%)\n")
         f.write(f"Precision: {result['Test Precision']:.4f} ({result['Test Precision']*100:.2f}%)\n")

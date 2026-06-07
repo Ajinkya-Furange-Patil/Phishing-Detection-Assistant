@@ -1299,7 +1299,6 @@ h2::before {
 .loading-overlay.light .scan-progress-track {
   background: rgba(0, 0, 0, 0.08);
 }
-
 .scan-animation-wrapper {
   display: flex;
   flex-direction: column;
