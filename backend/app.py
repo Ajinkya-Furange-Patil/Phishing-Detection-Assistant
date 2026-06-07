@@ -417,23 +417,53 @@ def analyze_comprehensive():
         
         # Get model preference
         model_type = data.get('model', DEFAULT_MODEL)
-        if model_type not in ['logistic', 'random_forest']:
-            model_type = DEFAULT_MODEL
         
-        # ML prediction
-        ml_result = predict_phishing(full_text, model_type)
-        phishing_probability = ml_result['phishing_probability']
-        
-        # Comprehensive analysis
-        analysis = advanced_analyzer.analyze_email(
-            email_content=email_content,
-            subject=subject,
-            sender=sender,
-            phishing_probability=phishing_probability
-        )
-        
-        # Add ML results
-        analysis['ml_prediction'] = ml_result
+        if model_type == 'gemini':
+            if not GEMINI_AVAILABLE or not gemini_extractor:
+                return jsonify({
+                    'success': False,
+                    'error': 'Google Gemini API is not configured. Please set the GEMINI_API_KEY environment variable on the server.'
+                }), 400
+            
+            print("   Using Gemini API for comprehensive email analysis...")
+            analysis = gemini_extractor.analyze_email(
+                email_content=email_content,
+                subject=subject,
+                sender=sender
+            )
+            # Add ML mapping so frontend diagnostic module scores populate correctly
+            analysis['ml_prediction'] = {
+                'phishing_probability': analysis['phishing_probability'],
+                'risk_level': analysis['risk_level'],
+                'model_used': 'gemini',
+                'features': {},
+                'modules': {
+                    'content': analysis['phishing_probability'],
+                    'url': 0.9 if analysis['url_analysis']['risk'] == 'HIGH' else 0.5 if analysis['url_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'header': 0.9 if analysis['sender_analysis']['risk'] == 'HIGH' else 0.5 if analysis['sender_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'attachment': 0.6 if 'attachment' in str(analysis['red_flags']).lower() else 0.0,
+                    'behavioral': min(1.0, analysis['social_engineering']['techniques_detected'] / 4.0)
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            if model_type not in ['logistic', 'random_forest']:
+                model_type = DEFAULT_MODEL
+            
+            # ML prediction
+            ml_result = predict_phishing(full_text, model_type)
+            phishing_probability = ml_result['phishing_probability']
+            
+            # Comprehensive analysis
+            analysis = advanced_analyzer.analyze_email(
+                email_content=email_content,
+                subject=subject,
+                sender=sender,
+                phishing_probability=phishing_probability
+            )
+            
+            # Add ML results
+            analysis['ml_prediction'] = ml_result
         
         return jsonify({
             'success': True,
@@ -529,27 +559,55 @@ def extract_and_analyze():
         
         print(f"   [OK] Extracted: subject='{subject[:50]}', sender='{sender}', body={len(email_content)} chars")
         
-        # Step 2: ML prediction
+        # Step 2: Prediction / Analysis
         full_text = f"{subject} {email_content}".strip()
         model_type = data.get('model', DEFAULT_MODEL)
-        if model_type not in ['logistic', 'random_forest']:
-            model_type = DEFAULT_MODEL
         
-        ml_result = predict_phishing(full_text, model_type)
-        phishing_probability = ml_result['phishing_probability']
-        
-        print(f"   [ML] Result: phishing_prob={phishing_probability:.4f}, risk={ml_result['risk_level']}")
-        
-        # Step 3: Comprehensive analysis
-        analysis = advanced_analyzer.analyze_email(
-            email_content=email_content,
-            subject=subject,
-            sender=sender,
-            phishing_probability=phishing_probability
-        )
-        
-        # Add ML and extraction results
-        analysis['ml_prediction'] = ml_result
+        if model_type == 'gemini':
+            if not GEMINI_AVAILABLE or not gemini_extractor:
+                return jsonify({
+                    'success': False,
+                    'error': 'Google Gemini API is not configured. Please set the GEMINI_API_KEY environment variable on the server.'
+                }), 400
+            
+            print("   Using Gemini API for comprehensive email analysis...")
+            analysis = gemini_extractor.analyze_email(
+                email_content=email_content,
+                subject=subject,
+                sender=sender
+            )
+            analysis['ml_prediction'] = {
+                'phishing_probability': analysis['phishing_probability'],
+                'risk_level': analysis['risk_level'],
+                'model_used': 'gemini',
+                'features': {},
+                'modules': {
+                    'content': analysis['phishing_probability'],
+                    'url': 0.9 if analysis['url_analysis']['risk'] == 'HIGH' else 0.5 if analysis['url_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'header': 0.9 if analysis['sender_analysis']['risk'] == 'HIGH' else 0.5 if analysis['sender_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'attachment': 0.6 if 'attachment' in str(analysis['red_flags']).lower() else 0.0,
+                    'behavioral': min(1.0, analysis['social_engineering']['techniques_detected'] / 4.0)
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            if model_type not in ['logistic', 'random_forest']:
+                model_type = DEFAULT_MODEL
+            
+            ml_result = predict_phishing(full_text, model_type)
+            phishing_probability = ml_result['phishing_probability']
+            
+            print(f"   [ML] Result: phishing_prob={phishing_probability:.4f}, risk={ml_result['risk_level']}")
+            
+            # Step 3: Comprehensive analysis
+            analysis = advanced_analyzer.analyze_email(
+                email_content=email_content,
+                subject=subject,
+                sender=sender,
+                phishing_probability=phishing_probability
+            )
+            analysis['ml_prediction'] = ml_result
+            
         analysis['extraction_result'] = extraction_result
         analysis['extraction_method'] = 'gemini' if GEMINI_AVAILABLE else 'fallback'
         

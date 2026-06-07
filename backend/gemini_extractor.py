@@ -225,6 +225,119 @@ JSON Response:
         
         return data
 
+    def analyze_email(self, email_content: str, subject: str = '', sender: str = '') -> Dict[str, Any]:
+        """
+        Analyze email content for phishing using Gemini API.
+        """
+        if not self.model:
+            raise ValueError("Gemini model is not initialized. Please verify your GEMINI_API_KEY environment variable.")
+            
+        prompt = f"""
+You are an advanced cybersecurity AI specialized in phishing detection and email security auditing.
+Analyze the following email for phishing indicators, threat levels, and social engineering techniques.
+
+Email Details:
+- Sender: {sender}
+- Subject: {subject}
+- Content: {email_content}
+
+Your task is to output a detailed phishing analysis strictly adhering to the JSON structure specified below. Do not add markdown code block markers (like ```json). No preamble, no explanation, just raw JSON.
+
+Required JSON Structure:
+{{
+  "phishing_probability": float (from 0.0 to 1.0 representing the confidence/probability that this email is phishing),
+  "risk_level": "HIGH" | "MEDIUM" | "LOW",
+  "red_flags": [
+    {{
+      "type": "Urgency" | "Suspicious Request" | "Prize Scam" | "Financial Request" | "Threatening Language" | "Domain Mismatch" | "Poor Formatting" | "Other",
+      "severity": "HIGH" | "MEDIUM" | "LOW",
+      "description": "Short explanation of this specific flag",
+      "indicator": "The behavior/indicator that tipped off this flag"
+    }}
+  ],
+  "social_engineering": {{
+    "techniques_detected": int,
+    "details": [
+      {{
+        "technique": "Urgency" | "Fear" | "Greed" | "Authority" | "Trust" | "Curiosity" | "Impersonation",
+        "description": "How this technique is defined generally",
+        "keywords_found": [string],
+        "severity": "HIGH" | "MEDIUM",
+        "explanation": "Specific explanation of how this technique is used in this email"
+      }}
+    ],
+    "overall_risk": "HIGH" | "MEDIUM" | "LOW"
+  }},
+  "sender_analysis": {{
+    "email": "{sender}",
+    "domain": "Extracted domain name of sender",
+    "valid": true | false,
+    "risk": "HIGH" | "MEDIUM" | "LOW",
+    "issues": [string]
+  }},
+  "url_analysis": {{
+    "total_urls": int,
+    "risk": "HIGH" | "MEDIUM" | "LOW",
+    "issues": [string]
+  }},
+  "content_analysis": {{
+    "subject": "{subject}",
+    "body_length": int,
+    "risk": "HIGH" | "MEDIUM" | "LOW",
+    "issues": [string]
+  }},
+  "recommended_actions": [
+    {{
+      "priority": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+      "action": "What the user should do",
+      "reason": "Why this action is critical",
+      "steps": [string]
+    }}
+  ],
+  "employee_awareness": {{
+    "learning_points": [
+      {{
+        "topic": "Educational concept topic",
+        "lesson": "The core takeaway from this email pattern",
+        "tip": "Actionable daily habit tip to avoid this threat"
+      }}
+    ],
+    "general_advice": [string]
+  }},
+  "threat_indicators": {{
+    "score": int (0-100 overall threat score),
+    "max_score": 100,
+    "percentage": float (0.0 to 100.0),
+    "threat_level": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+    "indicators": [string]
+  }}
+}}
+"""
+        try:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.model.generate_content, prompt)
+                try:
+                    response = future.result(timeout=15)  # 15 second timeout
+                except concurrent.futures.TimeoutError:
+                    raise TimeoutError("Gemini API call timed out after 15 seconds during email analysis")
+            
+            cleaned = response.text.strip()
+            if cleaned.startswith('```json'):
+                cleaned = cleaned[7:]
+            if cleaned.startswith('```'):
+                cleaned = cleaned[3:]
+            if cleaned.endswith('```'):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
+            
+            # Parse JSON to ensure correctness
+            analysis_data = json.loads(cleaned)
+            return analysis_data
+        except Exception as e:
+            print(f"Gemini analysis error: {e}")
+            raise e
+
 
 def test_extractor():
     """Test the Gemini extractor with sample HTML."""

@@ -38,9 +38,10 @@ async function analyzeCurrentEmail() {
         const scrapedData = scrapeEmailPage();
         console.log('✅ Scraped', scrapedData.emailHTML.length, 'characters');
         
-        // Retrieve endpoint from sync settings dynamically
+        // Retrieve endpoint and model from sync settings dynamically
         const settings = await chrome.storage.sync.get(['settings']);
         const customEndpoint = settings.settings?.apiEndpoint || 'http://localhost:5000/analyze';
+        const modelEngine = settings.settings?.analysisEngine || 'random_forest';
         const apiUrl = new URL(customEndpoint);
         const extractAndAnalyzeUrl = `${apiUrl.origin}/extract-and-analyze`;
         
@@ -55,7 +56,7 @@ async function analyzeCurrentEmail() {
             },
             body: JSON.stringify({
                 page_html: scrapedData.emailHTML,
-                model: 'random_forest'
+                model: modelEngine
             })
         });
         

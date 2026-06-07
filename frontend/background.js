@@ -14,7 +14,8 @@ chrome.runtime.onInstalled.addListener((details) => {
         autoScan: true,
         showNotifications: true,
         darkOverlay: true,
-        apiEndpoint: 'http://localhost:5000/analyze'
+        apiEndpoint: 'http://localhost:5000/analyze',
+        analysisEngine: 'random_forest'
       }
     });
     
@@ -102,13 +103,14 @@ async function analyzeEmailBackground(emailData) {
   try {
     const settings = await chrome.storage.sync.get(['settings']);
     const apiEndpoint = settings.settings?.apiEndpoint || 'http://localhost:5000/analyze';
+    const analysisEngine = settings.settings?.analysisEngine || 'random_forest';
     
     // Prepare payload for our comprehensive backend
     const payload = {
       email_content: emailData.body || '',
       subject: emailData.subject || '',
       sender: emailData.sender || '',
-      model: 'random_forest'
+      model: analysisEngine
     };
     
     const response = await fetch(apiEndpoint, {

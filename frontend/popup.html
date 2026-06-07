@@ -308,6 +308,14 @@
             <label for="apiEndpoint">Stacking Ensemble API Endpoint:</label>
             <input type="text" id="apiEndpoint" value="http://localhost:5000/analyze" class="input-field">
           </div>
+          <div class="settings-item">
+            <label for="analysisEngine">Analysis Model / Engine:</label>
+            <select id="analysisEngine" class="input-field" style="background: #11131e; cursor: pointer;">
+              <option value="random_forest" style="background: #11131e;">PhishGuard ML (Stacking Ensemble)</option>
+              <option value="gemini" style="background: #11131e;">Google Gemini AI (LLM Analysis)</option>
+              <option value="logistic" style="background: #11131e;">PhishGuard ML (Logistic Regression)</option>
+            </select>
+          </div>
           <button class="btn btn-secondary" id="saveSettings">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />

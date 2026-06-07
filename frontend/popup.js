@@ -13,6 +13,7 @@ const autoScanCheckbox = document.getElementById('autoScan');
 const showNotificationsCheckbox = document.getElementById('showNotifications');
 const darkOverlayCheckbox = document.getElementById('darkOverlay');
 const apiEndpointInput = document.getElementById('apiEndpoint');
+const analysisEngineSelect = document.getElementById('analysisEngine');
 const saveSettingsBtn = document.getElementById('saveSettings');
 const statusIndicator = document.getElementById('statusIndicator');
 const toastContainer = document.getElementById('toastContainer');
@@ -22,7 +23,8 @@ let settings = {
   autoScan: true,
   showNotifications: true,
   darkOverlay: true,
-  apiEndpoint: 'http://localhost:5000/analyze'
+  apiEndpoint: 'http://localhost:5000/analyze',
+  analysisEngine: 'random_forest'
 };
 
 let currentFormattedReport = '';
@@ -254,6 +256,7 @@ chromeStorageGet('sync', ['settings'], (result) => {
     if (showNotificationsCheckbox) showNotificationsCheckbox.checked = settings.showNotifications;
     if (darkOverlayCheckbox) darkOverlayCheckbox.checked = settings.darkOverlay;
     if (apiEndpointInput) apiEndpointInput.value = settings.apiEndpoint;
+    if (analysisEngineSelect && settings.analysisEngine) analysisEngineSelect.value = settings.analysisEngine;
     applyOverlayTheme();
   }
 });
@@ -525,7 +528,7 @@ document.getElementById('confirmSend').addEventListener('click', async () => {
         email_content: bodyVal,
         subject: subjectVal,
         sender: senderVal,
-        model: 'random_forest'
+        model: settings.analysisEngine || 'random_forest'
       })
     });
 
@@ -730,14 +733,14 @@ async function analyzeEmail(emailData) {
     if (settings.apiEndpoint.includes('/extract-and-analyze')) {
       payload = {
         page_html: emailData.emailHTML || emailData.fullHTML || '',
-        model: 'random_forest'
+        model: settings.analysisEngine || 'random_forest'
       };
     } else {
       payload = {
         email_content: emailData.body || '',
         subject: emailData.subject || '',
         sender: emailData.sender || '',
-        model: 'random_forest'
+        model: settings.analysisEngine || 'random_forest'
       };
     }
     
@@ -953,6 +956,7 @@ saveSettingsBtn.addEventListener('click', () => {
   settings.showNotifications = showNotificationsCheckbox.checked;
   settings.darkOverlay = darkOverlayCheckbox ? darkOverlayCheckbox.checked : true;
   settings.apiEndpoint = apiEndpointInput.value;
+  settings.analysisEngine = analysisEngineSelect ? analysisEngineSelect.value : 'random_forest';
 
   applyOverlayTheme();
   chromeStorageSet('sync', { settings }, () => {
