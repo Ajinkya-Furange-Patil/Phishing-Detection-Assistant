@@ -7,7 +7,8 @@ import io
 import re
 import random
 from datetime import datetime
-from advanced_analyzer import PhishingAnalyzer
+from advanced_analyzer import PhishingAnalyzer, format_analysis_report, generate_html_report
+from gemini_extractor import GeminiEmailExtractor
 
 # Set stdout/stderr to UTF-8 to prevent console encoding crashes on Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -437,7 +438,8 @@ def analyze_comprehensive():
         return jsonify({
             'success': True,
             'analysis': analysis,
-            'formatted_report': format_analysis_report(analysis)
+            'formatted_report': format_analysis_report(analysis),
+            'html_report': generate_html_report(analysis)
         })
         
     except Exception as e:
@@ -563,7 +565,8 @@ def extract_and_analyze():
                 'extraction_confidence': extraction_result.get('extraction_confidence', 0.5)
             },
             'analysis': analysis,
-            'formatted_report': format_analysis_report(analysis)
+            'formatted_report': format_analysis_report(analysis),
+            'html_report': generate_html_report(analysis)
         })
         
     except Exception as e:

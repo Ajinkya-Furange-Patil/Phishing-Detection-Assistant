@@ -472,12 +472,12 @@ ${result.formatted_report}
     document.getElementById('close-modal').addEventListener('click', () => modal.remove());
     
     document.getElementById('download-modal-report').addEventListener('click', () => {
-        const textContent = result.formatted_report || '';
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const textContent = result.html_report || '';
+        const blob = new Blob([textContent], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const element = document.createElement('a');
         element.setAttribute('href', url);
-        element.setAttribute('download', `phishguard_report_${Date.now()}.txt`);
+        element.setAttribute('download', `phishguard_report_${Date.now()}.html`);
         element.style.display = 'none';
         document.body.appendChild(element);
         element.click();

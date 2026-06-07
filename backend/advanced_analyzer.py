@@ -633,3 +633,302 @@ def format_analysis_report(analysis: Dict[str, Any]) -> str:
     report.append("+" + "-" * 78 + "+")
     
     return "\n".join(report)
+
+
+def generate_html_report(analysis: Dict[str, Any]) -> str:
+    """Generate a highly professional, print-ready, black-and-white HTML report."""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Format red flags
+    red_flags_html = ""
+    if analysis['red_flags']:
+        for flag in analysis['red_flags']:
+            red_flags_html += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 20%;">{flag['type']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 15%;">{flag['severity']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 40%;">{flag['description']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-style: italic; width: 25%;">{flag['indicator']}</td>
+            </tr>
+            """
+    else:
+        red_flags_html = "<tr><td colspan='4' style='padding: 12px; border: 1px solid #ddd; text-align: center; color: #666;'>No security red flags detected.</td></tr>"
+
+    # Format social engineering
+    se_html = ""
+    se_details = analysis['social_engineering']['details']
+    if se_details:
+        for tech in se_details:
+            se_html += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">{tech['technique']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 15%;">{tech['severity']}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 60%;">{tech['explanation']}</td>
+            </tr>
+            """
+    else:
+        se_html = "<tr><td colspan='3' style='padding: 12px; border: 1px solid #ddd; text-align: center; color: #666;'>No social engineering techniques identified.</td></tr>"
+
+    # Format sender issues
+    sender_issues = ""
+    if analysis['sender_analysis']['issues']:
+        for issue in analysis['sender_analysis']['issues']:
+            sender_issues += f"<li>{issue}</li>"
+    else:
+        sender_issues = "<li>No domain anomalies detected.</li>"
+
+    # Format url issues
+    url_issues = ""
+    if analysis['url_analysis']['total_urls'] > 0:
+        if analysis['url_analysis']['issues']:
+            for issue in analysis['url_analysis']['issues']:
+                url_issues += f"<li>{issue}</li>"
+        else:
+            url_issues = "<li>No suspicious URLs detected.</li>"
+    else:
+        url_issues = "<li>No URLs found in the email body.</li>"
+
+    # Format recommended actions
+    rec_html = ""
+    for i, rec in enumerate(analysis['recommended_actions'], 1):
+        steps_list = "".join([f"<li style='margin-bottom: 4px;'>[ ] {step}</li>" for step in rec['steps']])
+        rec_html += f"""
+        <div style="margin-bottom: 15px; page-break-inside: avoid;">
+            <h4 style="margin: 0 0 5px 0; font-size: 13px; font-weight: bold;">{i}. {rec['action']} (Priority: {rec['priority']})</h4>
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #444;"><strong>Justification:</strong> {rec['reason']}</p>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: none; font-size: 12px; font-family: monospace;">
+                {steps_list}
+            </ul>
+        </div>
+        """
+
+    # Format employee awareness
+    awareness_html = ""
+    for i, point in enumerate(analysis['employee_awareness']['learning_points'], 1):
+        awareness_html += f"""
+        <div style="margin-bottom: 12px; page-break-inside: avoid;">
+            <h4 style="margin: 0 0 4px 0; font-size: 13px; font-weight: bold;">{i}. {point['topic']}</h4>
+            <p style="margin: 0 0 3px 0; font-size: 12px; color: #333;"><strong>Concept:</strong> {point['lesson']}</p>
+            <p style="margin: 0 0 3px 0; font-size: 12px; color: #555; font-style: italic;"><strong>Best Practice Habit:</strong> {point['tip']}</p>
+        </div>
+        """
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phishing Security Audit Report - PhishGuard</title>
+    <style>
+        body {{
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            margin: 40px auto;
+            max-width: 800px;
+            padding: 0 20px;
+        }}
+        h1, h2, h3, h4 {{
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            color: #000;
+        }}
+        .header-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }}
+        .header-table td {{
+            padding: 10px;
+            border: 2px solid #000;
+        }}
+        .report-title {{
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin: 0;
+        }}
+        .meta-info {{
+            font-size: 12px;
+            font-family: 'Arial', sans-serif;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }}
+        .section-title {{
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            page-break-after: avoid;
+        }}
+        table.data-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+            font-family: 'Arial', sans-serif;
+        }}
+        table.data-table th {{
+            background-color: #f2f2f2;
+            text-align: left;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }}
+        .risk-gauge-box {{
+            border: 1px solid #000;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }}
+        .risk-value {{
+            font-size: 36px;
+            font-weight: bold;
+            font-family: 'Arial', sans-serif;
+            margin: 5px 0;
+        }}
+        .bullet-list {{
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }}
+        .print-btn-container {{
+            margin-bottom: 30px;
+            text-align: right;
+        }}
+        .print-btn {{
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+        }}
+        .print-btn:hover {{
+            background: #444;
+        }}
+        @media print {{
+            body {{
+                margin: 20px;
+                max-width: 100%;
+                font-size: 12pt;
+            }}
+            .print-btn-container {{
+                display: none;
+            }}
+        }}
+    </style>
+</head>
+<body>
+
+    <div class="print-btn-container">
+        <button class="print-btn" onclick="window.print()">Print Report / Save as PDF</button>
+    </div>
+
+    <table class="header-table">
+        <tr>
+            <td class="report-title">PHISHING SECURITY AUDIT REPORT</td>
+        </tr>
+    </table>
+
+    <div class="meta-info">
+        <table style="width: 100%; font-size: 12px;">
+            <tr>
+                <td><strong>Date Generated:</strong> {timestamp}</td>
+                <td style="text-align: right;"><strong>Security Engine:</strong> PhishGuard AI Threat Detection v2.1</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">1. Executive Risk Assessment</div>
+    <div style="display: flex; gap: 20px; margin-bottom: 20px; align-items: stretch;">
+        <div class="risk-gauge-box" style="flex: 1; display: flex; flex-direction: column; justify-content: center; margin-bottom: 0;">
+            <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; font-family: 'Arial', sans-serif; letter-spacing: 1px;">Combined Phishing Probability</div>
+            <div class="risk-value">{analysis['phishing_probability']*100:.2f}%</div>
+            <div style="font-size: 12px; font-weight: bold; letter-spacing: 0.5px;">CLASSIFICATION: {analysis['risk_level']}</div>
+        </div>
+        <div style="flex: 1.5; border: 1px solid #000; padding: 15px; font-size: 13px;">
+            <strong>Audit Details:</strong>
+            <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                <li style="margin-bottom: 6px;">Heuristic Threat Score: {analysis['threat_indicators']['score']}/{analysis['threat_indicators']['max_score']} ({analysis['threat_indicators']['percentage']:.1f}%)</li>
+                <li style="margin-bottom: 6px;">Sender Risk Evaluation: {analysis['sender_analysis']['risk']}</li>
+                <li style="margin-bottom: 6px;">Embedded Link Profile: {analysis['url_analysis']['risk']} ({analysis['url_analysis']['total_urls']} links extracted)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section-title">2. Detected Security Red Flags</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Description</th>
+                <th>Threat Indicator</th>
+            </tr>
+        </thead>
+        <tbody>
+            {red_flags_html}
+        </tbody>
+    </table>
+
+    <div class="section-title">3. Social Engineering Techniques</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Technique</th>
+                <th>Severity</th>
+                <th>Context Explanation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {se_html}
+        </tbody>
+    </table>
+
+    <div class="section-title">4. Identity & Source Reputation</div>
+    <div style="font-size: 13px; margin-bottom: 15px;">
+        <strong>Sender Address:</strong> {analysis['sender_analysis'].get('email', 'N/A')}
+        <br>
+        <strong>Reputation Assessment:</strong> {analysis['sender_analysis']['risk']}
+        <ul class="bullet-list">
+            {sender_issues}
+        </ul>
+    </div>
+
+    <div class="section-title">5. Embedded URL Security</div>
+    <div style="font-size: 13px; margin-bottom: 15px;">
+        <strong>Total Links Analyzed:</strong> {analysis['url_analysis']['total_urls']}
+        <br>
+        <strong>Link Risk Score:</strong> {analysis['url_analysis']['risk']}
+        <ul class="bullet-list">
+            {url_issues}
+        </ul>
+    </div>
+
+    <div class="section-title">6. Actionable Mitigation Steps</div>
+    {rec_html}
+
+    <div class="section-title">7. Employee Security Awareness Training</div>
+    {awareness_html}
+
+    <hr style="border: none; border-top: 2px solid #000; margin-top: 40px; margin-bottom: 10px;">
+    <div style="text-align: center; font-size: 10px; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">
+        *** CONFIDENTIAL - FOR SYSTEM ADMINISTRATOR & INTERNAL USE ONLY ***
+    </div>
+
+</body>
+</html>
+"""
+    return html
