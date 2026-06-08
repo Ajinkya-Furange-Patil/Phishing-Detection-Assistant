@@ -7,6 +7,20 @@ import io
 import re
 import random
 from datetime import datetime
+
+# Load local .env file if it exists (run before importing models/extractors to ensure key is available)
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(env_path):
+    try:
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
+    except Exception as e:
+        print(f"[WARN] Failed to load .env file: {e}")
+
 from advanced_analyzer import PhishingAnalyzer, format_analysis_report, generate_html_report
 from gemini_extractor import GeminiEmailExtractor
 

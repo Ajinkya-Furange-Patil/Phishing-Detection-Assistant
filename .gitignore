@@ -102,3 +102,9 @@ MODELS/Models 1/
 tmp/
 temp/
 *.tmp
+
+# Local Environment Variables
+.env
+.env.local
+.env.*
+

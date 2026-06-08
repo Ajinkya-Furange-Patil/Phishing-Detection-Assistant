@@ -32,7 +32,12 @@ ipykernel>=6.22.0
 plotly>=5.14.0
 tensorboard>=2.12.0
 
-
-
+# PDF Processing & Generation
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+pdfminer.six>=20221105
+xhtml2pdf>=0.2.11
+reportlab>=4.0.0
+pdfkit>=1.0.0
 
 # https://drive.google.com/drive/folders/1529uN4QWvzt4HSh1aMjIoyjOw7Jbsyjd?usp=sharing

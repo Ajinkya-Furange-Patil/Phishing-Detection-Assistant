@@ -4,3 +4,11 @@ scikit-learn>=1.2.0
 numpy>=1.23.0
 pandas>=1.5.0
 google-generativeai>=0.3.0
+
+# PDF Processing & Generation
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+pdfminer.six>=20221105
+xhtml2pdf>=0.2.11
+reportlab>=4.0.0
+pdfkit>=1.0.0
