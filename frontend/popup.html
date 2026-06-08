@@ -55,6 +55,21 @@
               </svg>
             </div>
           </div>
+          
+          <div class="engine-selector-container" style="width: 250px; margin-bottom: 20px;">
+            <label class="section-label">Analysis Engine</label>
+            <div class="engine-toggle-group" id="mainEngineGroup">
+              <button type="button" class="engine-toggle-btn active" data-engine="our_model">
+                <span class="engine-btn-icon">🛡️</span>
+                <span class="engine-btn-text">Our Model</span>
+              </button>
+              <button type="button" class="engine-toggle-btn" data-engine="gemini">
+                <span class="engine-btn-icon">✨</span>
+                <span class="engine-btn-text">Gemini API</span>
+              </button>
+            </div>
+          </div>
+          
           <button class="btn btn-primary scan-btn" id="scanCurrentEmail">
             <span class="btn-shine"></span>
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -90,6 +105,20 @@
             <textarea id="confirmBody" class="input-field" placeholder="Extracting body content..." rows="5" style="resize: vertical; min-height: 80px; font-family: var(--font-main); height: 120px; line-height: 1.4;"></textarea>
           </div>
           
+          <div class="engine-selector-container">
+            <label class="section-label">Analysis Engine</label>
+            <div class="engine-toggle-group" id="confirmEngineGroup">
+              <button type="button" class="engine-toggle-btn active" data-engine="our_model">
+                <span class="engine-btn-icon">🛡️</span>
+                <span class="engine-btn-text">Our Model</span>
+              </button>
+              <button type="button" class="engine-toggle-btn" data-engine="gemini">
+                <span class="engine-btn-icon">✨</span>
+                <span class="engine-btn-text">Gemini API</span>
+              </button>
+            </div>
+          </div>
+          
           <div class="confirm-btn-row" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 15px;">
             <button class="btn btn-secondary" id="confirmCancel" style="padding: 10px 14px;">
               Cancel
@@ -110,15 +139,29 @@
             </h3>
             <span class="verdict-badge" id="verdictBadge">SAFE</span>
           </div>
-          <div class="gauge-container">
-            <div class="glowing-gauge" id="mainGauge">
-              <svg class="gauge-arc" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="52" class="gauge-arc-bg" />
-                <circle cx="60" cy="60" r="52" class="gauge-arc-fill" id="gaugeArcFill" />
-              </svg>
-              <div class="gauge-text">
-                <span class="gauge-percent" id="overallRiskValue">0%</span>
-                <span class="gauge-label">RISK LEVEL</span>
+          <div class="gauges-flex-container">
+            <div class="glowing-gauge-wrapper">
+              <div class="glowing-gauge" id="mainGauge">
+                <svg class="gauge-arc" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" class="gauge-arc-bg" />
+                  <circle cx="60" cy="60" r="52" class="gauge-arc-fill" id="gaugeArcFill" />
+                </svg>
+                <div class="gauge-text">
+                  <span class="gauge-percent" id="overallRiskValue">0%</span>
+                  <span class="gauge-label">MODEL RISK</span>
+                </div>
+              </div>
+            </div>
+            <div class="glowing-gauge-wrapper">
+              <div class="glowing-gauge" id="redFlagsGauge">
+                <svg class="gauge-arc" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" class="gauge-arc-bg" />
+                  <circle cx="60" cy="60" r="52" class="gauge-arc-fill" id="redFlagsArcFill" />
+                </svg>
+                <div class="gauge-text">
+                  <span class="gauge-percent" id="redFlagsRiskValue">0%</span>
+                  <span class="gauge-label">RED FLAGS</span>
+                </div>
               </div>
             </div>
           </div>

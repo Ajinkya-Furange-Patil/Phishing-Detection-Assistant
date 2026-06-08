@@ -258,6 +258,7 @@ chromeStorageGet('sync', ['settings'], (result) => {
     if (apiEndpointInput) apiEndpointInput.value = settings.apiEndpoint;
     if (analysisEngineSelect && settings.analysisEngine) analysisEngineSelect.value = settings.analysisEngine;
     applyOverlayTheme();
+    updateEngineToggleUI();
   }
 });
 
@@ -417,42 +418,64 @@ scanBtn.addEventListener('click', async () => {
   updateScanStep(1, 'active');
 
   try {
-    // Get active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    let extracted;
 
-    if (!tab || !tab.id || tab.url.startsWith('chrome://')) {
-      updateScanStep(1, 'failed');
-      throw new Error('Please navigate to Gmail or Outlook to scan emails.');
-    }
-
-    // Step 1 done, Step 2 active: Extracting email content...
-    updateScanStep(1, 'done');
-    updateScanStep(2, 'active');
-
-    // Send message to content script to extract email HTML
-    let response;
-    try {
-      response = await chrome.tabs.sendMessage(tab.id, { action: 'extractEmail' });
-    } catch (msgErr) {
-      updateScanStep(2, 'failed');
-      throw new Error('Could not establish connection with email page. Please refresh the Gmail/Outlook tab.');
-    }
-
-    if (response && response.emailData) {
-      currentEmailData = response.emailData;
+    if (typeof chrome === 'undefined' || !chrome.tabs || !chrome.tabs.query) {
+      console.log('Running in browser demo mode - generating mock email content');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      updateScanStep(1, 'done');
+      updateScanStep(2, 'active');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Run clean extraction via Gemini on Flask backend
-      let extracted;
-      try {
-        extracted = await extractEmailFields(currentEmailData.emailHTML || currentEmailData.fullHTML);
-      } catch (err) {
-        updateScanStep(2, 'failed');
-        throw err;
+      extracted = {
+        sender: "Security Alert <security-team@bank-verification-secure.com>",
+        subject: "URGENT: Suspicious Account Login Detected",
+        body: "We detected a suspicious login attempt to your banking portal from IP 192.168.1.105. Please verify your credentials immediately at http://suspicious-bank-link.net to prevent permanent account suspension. Act within 24 hours."
+      };
+      
+      updateScanStep(2, 'done');
+    } else {
+      // Get active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      if (!tab || !tab.id || tab.url.startsWith('chrome://')) {
+        updateScanStep(1, 'failed');
+        throw new Error('Please navigate to Gmail or Outlook to scan emails.');
       }
 
-      // Finish Step 2
-      updateScanStep(2, 'done');
+      // Step 1 done, Step 2 active: Extracting email content...
+      updateScanStep(1, 'done');
+      updateScanStep(2, 'active');
 
+      // Send message to content script to extract email HTML
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, { action: 'extractEmail' });
+      } catch (msgErr) {
+        updateScanStep(2, 'failed');
+        throw new Error('Could not establish connection with email page. Please refresh the Gmail/Outlook tab.');
+      }
+
+      if (response && response.emailData) {
+        currentEmailData = response.emailData;
+        
+        // Run clean extraction via Gemini on Flask backend
+        try {
+          extracted = await extractEmailFields(currentEmailData.emailHTML || currentEmailData.fullHTML);
+        } catch (err) {
+          updateScanStep(2, 'failed');
+          throw err;
+        }
+
+        // Finish Step 2
+        updateScanStep(2, 'done');
+      } else {
+        updateScanStep(2, 'failed');
+        throw new Error('No email content could be found. Open an email thread.');
+      }
+    }
+
+    if (extracted) {
       // Populate editable fields
       document.getElementById('confirmSender').value = extracted.sender || '';
       document.getElementById('confirmSubject').value = extracted.subject || '';
@@ -465,9 +488,6 @@ scanBtn.addEventListener('click', async () => {
       document.getElementById('confirmationPanel').style.display = 'block';
 
       showToast('Email content parsed. Please verify details.', 'info');
-    } else {
-      updateScanStep(2, 'failed');
-      throw new Error('No email content could be found. Open an email thread.');
     }
   } catch (error) {
     console.error('Scan error:', error);
@@ -805,7 +825,7 @@ function showDiagnostics(result) {
   currentFormattedReport = result.formatted_report || '';
   currentHtmlReport = result.html_report || '';
 
-  // Animated risk percentage
+  // 1. First Gauge: Model Predicted Risk
   const overallRisk = document.getElementById('overallRiskValue');
   const riskPct = Math.round(result.confidence * 100);
 
@@ -829,6 +849,33 @@ function showDiagnostics(result) {
     } else {
       arcFill.style.stroke = 'var(--success-color)';
       overallRisk.style.color = 'var(--success-color)';
+    }
+  }
+
+  // 2. Second Gauge: Red Flags Risk
+  const redFlagsRisk = document.getElementById('redFlagsRiskValue');
+  const redFlagsPct = result.analysis && result.analysis.threat_indicators ? Math.round(result.analysis.threat_indicators.score) : 0;
+
+  // Animate the number
+  animateValue(redFlagsRisk, 0, redFlagsPct, 1200);
+
+  // SVG arc gauge animation for red flags
+  const redFlagsArcFill = document.getElementById('redFlagsArcFill');
+  if (redFlagsArcFill) {
+    const circumference = 2 * Math.PI * 52; // ~326.73
+    const offset = circumference - (redFlagsPct / 100) * circumference;
+    redFlagsArcFill.style.strokeDashoffset = offset;
+
+    // Color based on threat level
+    if (redFlagsPct > 60) {
+      redFlagsArcFill.style.stroke = 'var(--danger-color)';
+      redFlagsRisk.style.color = 'var(--danger-color)';
+    } else if (redFlagsPct > 30) {
+      redFlagsArcFill.style.stroke = 'var(--warning-color)';
+      redFlagsRisk.style.color = 'var(--warning-color)';
+    } else {
+      redFlagsArcFill.style.stroke = 'var(--success-color)';
+      redFlagsRisk.style.color = 'var(--success-color)';
     }
   }
 
@@ -959,6 +1006,7 @@ saveSettingsBtn.addEventListener('click', () => {
   settings.analysisEngine = analysisEngineSelect ? analysisEngineSelect.value : 'random_forest';
 
   applyOverlayTheme();
+  updateEngineToggleUI();
   chromeStorageSet('sync', { settings }, () => {
     // Animated save feedback
     saveSettingsBtn.innerHTML = `
@@ -1014,6 +1062,8 @@ document.querySelectorAll('.nav-item').forEach(button => {
 // ═══════════════════════════════════════════════════════════
 loadRecentResults();
 generateHeatmap();
+setupEngineToggles();
+updateEngineToggleUI();
 
 const downloadReportBtn = document.getElementById('downloadReportBtn');
 if (downloadReportBtn) {
@@ -1039,3 +1089,59 @@ if (downloadReportBtn) {
 setTimeout(() => {
   showToast('PhishGuard shield is active', 'info', 2500);
 }, 800);
+
+// ── Analysis Engine Toggle Controls ──
+function updateEngineToggleUI() {
+  const currentEngine = settings.analysisEngine;
+  const isGemini = currentEngine === 'gemini';
+  
+  // Main engine group buttons
+  document.querySelectorAll('#mainEngineGroup .engine-toggle-btn').forEach(btn => {
+    const isBtnGemini = btn.dataset.engine === 'gemini';
+    if (isBtnGemini === isGemini) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Confirm engine group buttons
+  document.querySelectorAll('#confirmEngineGroup .engine-toggle-btn').forEach(btn => {
+    const isBtnGemini = btn.dataset.engine === 'gemini';
+    if (isBtnGemini === isGemini) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+function setupEngineToggles() {
+  const handleEngineClick = (e) => {
+    const btn = e.currentTarget;
+    const targetEngine = btn.dataset.engine;
+    
+    if (targetEngine === 'gemini') {
+      settings.analysisEngine = 'gemini';
+    } else {
+      // Find what ML model was selected in the config dropdown (or default to random_forest)
+      const selectedDropdown = analysisEngineSelect ? analysisEngineSelect.value : 'random_forest';
+      settings.analysisEngine = (selectedDropdown === 'gemini') ? 'random_forest' : selectedDropdown;
+    }
+    
+    // Sync to config dropdown
+    if (analysisEngineSelect) {
+      analysisEngineSelect.value = settings.analysisEngine;
+    }
+    
+    // Save settings
+    chromeStorageSet('sync', { settings }, () => {
+      updateEngineToggleUI();
+      showToast(`Switched analysis engine to ${targetEngine === 'gemini' ? 'Gemini API' : 'Our Model'}`, 'info', 2000);
+    });
+  };
+
+  document.querySelectorAll('#mainEngineGroup .engine-toggle-btn, #confirmEngineGroup .engine-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', handleEngineClick);
+  });
+}

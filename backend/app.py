@@ -300,7 +300,50 @@ def api_scan():
             return jsonify({'error': 'No text provided for analysis'}), 400
         
         model_type = data.get('model', DEFAULT_MODEL)
-        if model_type not in ['logistic', 'random_forest']:
+        if model_type == 'gemini':
+            if not GEMINI_AVAILABLE or not gemini_extractor:
+                return jsonify({
+                    'error': 'Google Gemini API is not configured. Please set the GEMINI_API_KEY environment variable on the server.',
+                    'isPhishing': False,
+                    'confidence': 0,
+                    'modules': {'content': 0, 'url': 0, 'header': 0, 'attachment': 0, 'behavioral': 0}
+                }), 400
+            
+            subject = data.get('subject', '')
+            body = data.get('body', '')
+            sender = data.get('sender', '')
+            if not body and not subject:
+                body = text
+                
+            analysis = gemini_extractor.analyze_email(
+                email_content=body,
+                subject=subject,
+                sender=sender
+            )
+            
+            is_phishing = analysis['phishing_probability'] >= 0.5
+            confidence = analysis['phishing_probability']
+            
+            return jsonify({
+                'isPhishing': is_phishing,
+                'confidence': confidence,
+                'subject': subject or 'Unknown',
+                'risk_level': analysis['risk_level'],
+                'model_used': 'gemini',
+                'modules': {
+                    'content': confidence,
+                    'url': 0.9 if analysis['url_analysis']['risk'] == 'HIGH' else 0.5 if analysis['url_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'header': 0.9 if analysis['sender_analysis']['risk'] == 'HIGH' else 0.5 if analysis['sender_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'attachment': 0.6 if 'attachment' in str(analysis['red_flags']).lower() else 0.0,
+                    'behavioral': min(1.0, analysis['social_engineering']['techniques_detected'] / 4.0)
+                },
+                'features': {},
+                'phishing_probability': confidence,
+                'legitimate_probability': 1.0 - confidence,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        elif model_type not in ['logistic', 'random_forest']:
             model_type = DEFAULT_MODEL
         
         # Run prediction
@@ -360,7 +403,52 @@ def predict():
         
         # Get model preference
         model_type = data.get('model', DEFAULT_MODEL)
-        if model_type not in ['logistic', 'random_forest']:
+        if model_type == 'gemini':
+            if not GEMINI_AVAILABLE or not gemini_extractor:
+                return jsonify({
+                    'success': False,
+                    'error': 'Google Gemini API is not configured. Please set the GEMINI_API_KEY environment variable on the server.'
+                }), 400
+                
+            subject = data.get('subject', '')
+            body = data.get('body', '')
+            sender = data.get('sender', '')
+            if not body and not subject:
+                body = text
+                
+            analysis = gemini_extractor.analyze_email(
+                email_content=body,
+                subject=subject,
+                sender=sender
+            )
+            
+            is_phishing = analysis['phishing_probability'] >= 0.5
+            confidence = analysis['phishing_probability']
+            
+            result = {
+                'is_phishing': is_phishing,
+                'confidence': confidence,
+                'phishing_probability': confidence,
+                'legitimate_probability': 1.0 - confidence,
+                'risk_level': analysis['risk_level'],
+                'model_used': 'gemini',
+                'features': {},
+                'modules': {
+                    'content': confidence,
+                    'url': 0.9 if analysis['url_analysis']['risk'] == 'HIGH' else 0.5 if analysis['url_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'header': 0.9 if analysis['sender_analysis']['risk'] == 'HIGH' else 0.5 if analysis['sender_analysis']['risk'] == 'MEDIUM' else 0.1,
+                    'attachment': 0.6 if 'attachment' in str(analysis['red_flags']).lower() else 0.0,
+                    'behavioral': min(1.0, analysis['social_engineering']['techniques_detected'] / 4.0)
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return jsonify({
+                'success': True,
+                'prediction': result
+            })
+            
+        elif model_type not in ['logistic', 'random_forest']:
             model_type = DEFAULT_MODEL
         
         # Make prediction

@@ -26,7 +26,7 @@ class GeminiEmailExtractor:
             return
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def extract_email_components(self, page_html: str) -> Dict[str, Any]:
         """
@@ -57,15 +57,11 @@ class GeminiEmailExtractor:
         prompt = self._create_extraction_prompt(page_html)
         
         try:
-            # Use a timeout to prevent hanging on slow Gemini API responses
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self.model.generate_content, prompt)
-                try:
-                    response = future.result(timeout=15)  # 15 second timeout
-                except concurrent.futures.TimeoutError:
-                    print("Gemini API timed out after 15 seconds, using fallback extraction")
-                    return self._fallback_extraction(page_html)
+            # Use standard API call with timeout options to prevent ThreadPoolExecutor deadlocks in Flask reloader
+            response = self.model.generate_content(
+                prompt,
+                request_options={"timeout": 30.0}
+            )
             
             extracted_data = self._parse_gemini_response(response.text)
             extracted_data['extraction_success'] = True
@@ -314,13 +310,11 @@ Required JSON Structure:
 }}
 """
         try:
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self.model.generate_content, prompt)
-                try:
-                    response = future.result(timeout=15)  # 15 second timeout
-                except concurrent.futures.TimeoutError:
-                    raise TimeoutError("Gemini API call timed out after 15 seconds during email analysis")
+            # Use standard API call with timeout options to prevent ThreadPoolExecutor deadlocks in Flask reloader
+            response = self.model.generate_content(
+                prompt,
+                request_options={"timeout": 30.0}
+            )
             
             cleaned = response.text.strip()
             if cleaned.startswith('```json'):
@@ -336,6 +330,9 @@ Required JSON Structure:
             return analysis_data
         except Exception as e:
             print(f"Gemini analysis error: {e}")
+            err_str = str(e)
+            if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
+                raise ValueError("Google Gemini API key is invalid. Please verify the GEMINI_API_KEY environment variable on your server.")
             raise e
 
 

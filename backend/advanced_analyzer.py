@@ -833,7 +833,10 @@ def generate_html_report(analysis: Dict[str, Any]) -> str:
 <body>
 
     <div class="print-btn-container">
-        <button class="print-btn" onclick="window.print()">Print Report / Save as PDF</button>
+        <button class="print-btn" id="print-report-btn">Print Report / Save as PDF</button>
+        <div style="font-size: 11px; color: #555; margin-top: 6px; font-family: 'Arial', sans-serif; text-align: right;">
+            Tip: If the button is blocked by security policies, you can always press <strong>Ctrl + P</strong> (or <strong>Cmd + P</strong> on Mac) to print or save the report as PDF.
+        </div>
     </div>
 
     <table class="header-table">
@@ -928,6 +931,11 @@ def generate_html_report(analysis: Dict[str, Any]) -> str:
         *** CONFIDENTIAL - FOR SYSTEM ADMINISTRATOR & INTERNAL USE ONLY ***
     </div>
 
+    <script>
+        document.getElementById('print-report-btn').addEventListener('click', function() {{
+            window.print();
+        }});
+    </script>
 </body>
 </html>
 """
